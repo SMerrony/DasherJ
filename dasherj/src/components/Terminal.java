@@ -9,6 +9,7 @@ import java.util.concurrent.BlockingQueue;
  * 
  * @author steve
  * 
+ * v.0.6 -  Extend self-test to behave like DasherQ
  * v.0.5 -  Add status.dirty = true to events where cursor is moved to improve responsiveness
  * 			Renamed from Screen to Terminal to more accurately reflect purpose
  * 			Replace * at startup with "OK" message
@@ -59,6 +60,7 @@ public class Terminal implements Runnable {
 
 	public static final byte SELF_TEST	    = (byte) -2;  // Not standard, used to initiate self-test function, only in off-line mode
 
+	public int visible_lines = VISIBLE_ROWS;
 	public int cursorX, cursorY;
 	public boolean roll_enabled, blinking_enabled, blinkState, protection_enabled;
 
@@ -154,12 +156,12 @@ public class Terminal implements Runnable {
 
 		byte[] testlineHRule1 = "12345678901234567890123456789012345678901234567890123456789012345678901234567890".getBytes();
 		byte[] testlineHRule2 = "         1         2         3         4         5         6         7         8".getBytes();
-		byte[] testline1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567489!\"$%^.".getBytes();
-		byte[] testlineN = "Normal  : ".getBytes();
-		byte[] testlineD = "Dim     : ".getBytes();
-		byte[] testlineB = "Blink   : ".getBytes();
-		byte[] testlineU = "Under   : ".getBytes();
-		byte[] testlineR = "Reverse : ".getBytes();
+		byte[] testline1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567489!\"$%.".getBytes();
+		byte[] testlineN = "3 Normal  : ".getBytes();
+		byte[] testlineD = "4 Dim     : ".getBytes();
+		byte[] testlineB = "5 Blink   : ".getBytes();
+		byte[] testlineU = "6 Under   : ".getBytes();
+		byte[] testlineR = "7 Reverse : ".getBytes();
 		int c;
 
 		fromKbdQ.offer( ERASE_WINDOW );
@@ -222,6 +224,11 @@ public class Terminal implements Runnable {
 		fromKbdQ.offer( CMD );
 		fromKbdQ.offer( (byte) 'E' );
 		fromKbdQ.offer( NL );
+		
+		for (int l = 8; l < visible_lines; l++) {
+			fromKbdQ.offer( (byte) ('0' + l % 10) );
+			fromKbdQ.offer( NL );
+;		}
 	}
 
 	@Override
