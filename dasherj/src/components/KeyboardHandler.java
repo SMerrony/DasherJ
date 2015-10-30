@@ -111,25 +111,7 @@ public class KeyboardHandler implements KeyEventDispatcher {
 	}
 
 	private void keyTyped(KeyEvent arg0) {
-	
-		char ch;
-		
-		ch = arg0.getKeyChar();
-		
-		// System.out.printf("Char captured: %s\n" , arg0.getKeyChar() );
-		
-/*		switch (ch) {
-		case 10: // convert plain LF to CR/LF for NVT compliance
-			lFromKbdQ.offer( (byte) 13 );
-			if (status.connection == Status.ConnectionType.TELNET_CONNECTED) {
-				lFromKbdQ.offer( (byte) 10 );
-			}
-			break;
-		
-		default:
-			lFromKbdQ.offer( (byte) arg0.getKeyChar() );
-		}
-*/		
+			
 		lFromKbdQ.offer( (byte) arg0.getKeyChar() );
 	}
 
