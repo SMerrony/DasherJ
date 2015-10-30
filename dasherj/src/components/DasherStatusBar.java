@@ -66,7 +66,7 @@ public class DasherStatusBar extends JPanel {
 			break;
 		case TELNET_CONNECTED:
 			onlineStatus.setText( "Online (Telnet)" );
-			connection.setText( status.remoteHost );
+			connection.setText( status.remoteHost + ":" + status.remotePort );
 			break;
 		}
 		
