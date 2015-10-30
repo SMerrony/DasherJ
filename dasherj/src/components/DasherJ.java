@@ -129,6 +129,7 @@ public class DasherJ extends JPanel implements ActionListener {
 	    	tc = new TelnetClient( fromHostQ, fromKbdQ );
 			if (tc.open(host.getText(), Integer.parseInt( port.getText() ))) {
 				status.remoteHost = host.getText();
+				status.remotePort = port.getText();
 				status.connection = ConnectionType.TELNET_CONNECTED;
 			} else {
 				JOptionPane.showMessageDialog( window, "Could not connect to " + host.getText() + ':' + port.getText() );
@@ -417,7 +418,7 @@ public class DasherJ extends JPanel implements ActionListener {
 									   "<html><center>"+
 									   "Dasher Terminal Emulator<br><br>" +
 									   "Version %s (%s)<br><br>" +
-									   "©%s Steve Merrony" +
+									   "ï¿½%s Steve Merrony" +
 									   "</center></html>",
 									   VERSION, RELEASE_STATUS, COPYRIGHT_YEAR ),
 									   "About DasherJ", 
