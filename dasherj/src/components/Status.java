@@ -19,9 +19,8 @@ public class Status {
 		public int getLevel() {	return level; }
 		public void setLevel(int level) { this.level = level; }
 	}
-	
-	public String serialPort;
-	public String remoteHost;
+	public int visLines, visCols;
+	public String serialPort, remoteHost, remotePort;
 	public boolean logging;
 	public boolean control_pressed, shift_pressed, holding, dirty;
 	
