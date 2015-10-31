@@ -105,6 +105,9 @@ public class KeyboardHandler implements KeyEventDispatcher {
 		case KeyEvent.VK_SHIFT:
 			status.shift_pressed = false;
 			break;
+		case KeyEvent.VK_ENTER:
+			lFromKbdQ.offer( (byte) 10 );
+			break;
 		default:
 			break;
 		}
