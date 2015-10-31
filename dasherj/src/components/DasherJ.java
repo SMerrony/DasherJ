@@ -1,6 +1,10 @@
 package components;
 
 /***
+ * v. 0.6 IP in status bar
+ *        Fix display of serial port in status bar
+ *        --host= option added
+ *        Rename screen to terminal
  * v. 0.5 Add ErPage. CR. ErEOL buttons
  *        Implement session logging as per v.0.4
  */
@@ -29,12 +33,16 @@ public class DasherJ extends JPanel implements ActionListener {
 	private static final int CRT_REFRESH_MS = 50;  // Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms
 	private static Timer updateCrtTimer;
 
-	private static final double VERSION = 0.5;
-	private static final int COPYRIGHT_YEAR = 2014;
+	private static final double VERSION = 0.6;
+	private static final int COPYRIGHT_YEAR = 2015;
 	private static final String RELEASE_STATUS = "Prerelease";
-	private static final String HELP_URL_TEXT = "http://stephenmerrony.co.uk/dg/software/new-software/dasherj-terminal-emulator.html";
+	private static final String HELP_URL_TEXT = "http://stephenmerrony.co.uk/dg/";
 	
 	private static final String ICON = "/resources/DGlogoOrange.png";
+	
+	private static boolean haveConnectHost = false;
+	private static String  connectHost;
+	private static int	   connectPort;
 	
 	static Status status;
 	static JFrame window;
@@ -47,7 +55,7 @@ public class DasherJ extends JPanel implements ActionListener {
 	static TelnetClient tc;
 	static BlockingQueue<Byte> fromHostQ, fromKbdQ, logQ;
 	static Crt crt;
-	static Terminal screen;
+	static Terminal terminal;
 	static File logFile;
 	static BufferedWriter logBuffWriter;
 	
@@ -64,8 +72,8 @@ public class DasherJ extends JPanel implements ActionListener {
         addToolButtons( toolbar );
         add( toolbar, BorderLayout.PAGE_START );
         
-        crt = new Crt( screen );
-        crt.setCharSize( Terminal.VISIBLE_ROWS + 1, Terminal.VISIBLE_COLS );
+        crt = new Crt( terminal );
+        crt.setCharSize( terminal.visible_lines, terminal.visible_cols );
          
         // add the crt canvas to the content pane.
         add( crt, BorderLayout.CENTER );
@@ -101,6 +109,7 @@ public class DasherJ extends JPanel implements ActionListener {
 			sc = new SerialClient( fromHostQ, fromKbdQ );
 			if (sc.open( port.getText() )) {
 				status.connection = ConnectionType.SERIAL_CONNECTED;
+				status.serialPort = port.getText();
 			} else {
 				JOptionPane.showMessageDialog( window, "Could not open " + port.getText() );
 				status.connection = ConnectionType.DISCONNECTED;
@@ -125,20 +134,27 @@ public class DasherJ extends JPanel implements ActionListener {
 		int rc = JOptionPane.showConfirmDialog(window, inputs, "DasherJ - Remote Host", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE );
 		//System.out.printf( "SCD Result %d\n", rc );
 		if (rc == 0) { // OK
-			// initialise the telnet session handler
-	    	tc = new TelnetClient( fromHostQ, fromKbdQ );
-			if (tc.open(host.getText(), Integer.parseInt( port.getText() ))) {
-				status.remoteHost = host.getText();
-				status.remotePort = port.getText();
-				status.connection = ConnectionType.TELNET_CONNECTED;
-			} else {
-				JOptionPane.showMessageDialog( window, "Could not connect to " + host.getText() + ':' + port.getText() );
-				status.connection = ConnectionType.DISCONNECTED;
+			if (!startTelnet( host.getText(), Integer.parseInt( port.getText() ) )) {
+				JOptionPane.showMessageDialog( window, "Could not connect to " + host + ':' + port );
 			}
 		}
 		
 		// restart our own keyboard handler
 		keyFocusManager.addKeyEventDispatcher( keyHandler );
+	}
+	
+	private static boolean startTelnet( String host, int port ) {
+		// initialise the telnet session handler
+    	tc = new TelnetClient( fromHostQ, fromKbdQ );
+		if (tc.open( host, port )) {
+			status.remoteHost = host;
+			status.remotePort = "" + port;
+			status.connection = ConnectionType.TELNET_CONNECTED;
+			return true;
+		} else {
+			status.connection = ConnectionType.DISCONNECTED;
+			return false;
+		}
 	}
 	
 	public JMenuBar createMenuBar() {
@@ -318,7 +334,7 @@ public class DasherJ extends JPanel implements ActionListener {
         		serialConnectMenuItem.setEnabled( !sc.connected );
         		networkMenu.setEnabled( !sc.connected );
         		serialDisconnectMenuItem.setEnabled ( sc.connected );
-        		status.serialPort = sc.serialPort.toString();
+        		// status.serialPort = sc.serialPort.toString();
         	}
         });
         serialMenu.add( serialConnectMenuItem );
@@ -613,6 +629,7 @@ public class DasherJ extends JPanel implements ActionListener {
         
         window.setVisible(true);
 
+        if (haveConnectHost) startTelnet( connectHost, connectPort );
         
         /* Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms */
         updateCrtTimer = new Timer( CRT_REFRESH_MS, new ActionListener() {
@@ -628,13 +645,25 @@ public class DasherJ extends JPanel implements ActionListener {
         // alternate the blink state every half-second
         Timer blinkTimer = new Timer( 500, new ActionListener() {
         	public void actionPerformed( ActionEvent ae ) {
-        		screen.blinkState = !screen.blinkState;
+        		terminal.blinkState = !terminal.blinkState;
         		crt.repaint();
         	}
         });
         blinkTimer.start();
     }
  
+    private static void parseHost( String hostArg ) {
+    	// format of arg is "--host=<hostNameOrIP>:<port>"
+    	int colonIx = hostArg.indexOf( ':' );
+    	if (colonIx == -1) {
+    		System.err.println( "Error - With a host/IP you must specify a port number after colon (:)" );
+    		System.exit( 1 );
+    	}
+    	// TODO: more error checking on hostname/port
+    	connectHost = hostArg.substring( 7, colonIx );
+    	connectPort = Integer.parseInt( hostArg.substring( colonIx + 1 ) );
+    	haveConnectHost = true;   	
+    }
     
     public static void main(String[] args) {
     	
@@ -644,8 +673,8 @@ public class DasherJ extends JPanel implements ActionListener {
     	
     	status = new Status();
     	
-    	screen = new Terminal( status, fromHostQ, fromKbdQ, logQ );
-    	(screenThread = new Thread( screen )).start();
+    	terminal = new Terminal( status, fromHostQ, fromKbdQ, logQ );
+    	(screenThread = new Thread( terminal )).start();
     	screenThread.setName( "ScreenThread" );
     	
     	// start off in local mode
@@ -653,7 +682,18 @@ public class DasherJ extends JPanel implements ActionListener {
     	(localThread = new Thread(new LocalClient( fromHostQ, fromKbdQ ))).start();
     	localThread.setName( "LocalThread" );
     	
-
+    	int argNum = 0;
+    	String arg;
+    	while ( argNum < args.length && args[argNum].startsWith( "--" ) ) {
+    		arg = args[argNum++];
+    		
+    		if (arg.equals( "--help" )) {
+    			System.err.println( "java -cp DasherJ DasherJ [--help] [--host=<hostname>:<port>]" );
+    			System.exit( 0 );
+    		}
+    		
+    		if (arg.startsWith( "--host=" )) parseHost( arg );
+    	}
     	    	
         //Schedule a job for the event-dispatching thread:
         //creating and showing this application's GUI.
