@@ -10,6 +10,7 @@ import java.util.concurrent.BlockingQueue;
  * @author steve
  * 
  * v.0.6 -  Extend self-test to behave like DasherQ
+ * 			Introduce DEFAULT_COLS/LINES, MAX_VISIBLE_COLS/LINES, TOTAL_COLS/LINES & visible_cols/lines
  * v.0.5 -  Add status.dirty = true to events where cursor is moved to improve responsiveness
  * 			Renamed from Screen to Terminal to more accurately reflect purpose
  * 			Replace * at startup with "OK" message
@@ -19,9 +20,12 @@ import java.util.concurrent.BlockingQueue;
  */
 public class Terminal implements Runnable {
 
-	public static final int VISIBLE_ROWS = 24;
-	public static final int VISIBLE_COLS = 80;
-
+	public static final int	DEFAULT_COLS      = 80,
+							MAX_VISIBLE_COLS  = 135,
+							TOTAL_COLS        = 208,
+							DEFAULT_LINES	  = 24,
+							MAX_VISIBLE_LINES = 66,
+							TOTAL_LINES 	  = 96;
 
 	public static final byte NULL			= (byte) 0;
 	public static final byte PRINT_FORM		= (byte) 1;
@@ -60,7 +64,8 @@ public class Terminal implements Runnable {
 
 	public static final byte SELF_TEST	    = (byte) -2;  // Not standard, used to initiate self-test function, only in off-line mode
 
-	public int visible_lines = VISIBLE_ROWS;
+	public int visible_lines;
+	public int visible_cols;
 	public int cursorX, cursorY;
 	public boolean roll_enabled, blinking_enabled, blinkState, protection_enabled;
 
@@ -78,6 +83,9 @@ public class Terminal implements Runnable {
 	public Terminal (Status pStatus, BlockingQueue<Byte> pFromHostQ, BlockingQueue<Byte> pFromKbdQ, BlockingQueue<Byte> pLogQ) {
 
 		status    = pStatus;
+		
+		visible_lines = DEFAULT_LINES;
+		visible_cols  = DEFAULT_COLS;
 		fromHostQ = pFromHostQ;
 		fromKbdQ  = pFromKbdQ;
 		logQ      = pLogQ;
@@ -95,9 +103,9 @@ public class Terminal implements Runnable {
 		dimmed = false;
 		reversedVideo = false;
 		underscored = false;
-		display = new Cell[VISIBLE_ROWS][VISIBLE_COLS];
-		for (int y = 0; y < VISIBLE_ROWS; y++) {
-			for (int x = 0; x < VISIBLE_COLS; x++) {
+		display = new Cell[TOTAL_LINES][TOTAL_COLS];
+		for (int y = 0; y < TOTAL_LINES; y++) {
+			for (int x = 0; x < TOTAL_COLS; x++) {
 				display[y][x] = new Cell();
 			}
 		}
@@ -107,7 +115,7 @@ public class Terminal implements Runnable {
 	}
 
 	void clearLine( int line ) {
-		for (int cc = 0; cc < VISIBLE_COLS; cc++) {
+		for (int cc = 0; cc < visible_cols; cc++) {
 			display[line][cc].clearToSpace();
 		}
 		inCommand = false;
@@ -120,19 +128,19 @@ public class Terminal implements Runnable {
 	}
 
 	void clearScreen() {
-		for (int row = 0; row < VISIBLE_ROWS; row++){
+		for (int row = 0; row < visible_lines; row++){
 			clearLine( row );
 		}
 	}
 
 	void eraseUnprotectedToEndOfScreen() {
 		// clear remainder of line
-		for (int x = cursorX; x < VISIBLE_COLS; x++) {
+		for (int x = cursorX; x < visible_cols; x++) {
 			display[cursorY][x].clearToSpaceIfUnprotected();
 		}
 		// clear all lines below
-		for (int y = cursorY + 1; y < VISIBLE_ROWS; y++) {
-			for (int x = 0; x < VISIBLE_COLS; x++) {
+		for (int y = cursorY + 1; y < visible_lines; y++) {
+			for (int x = 0; x < visible_cols; x++) {
 				display[y][x].clearToSpaceIfUnprotected();
 			}
 		}
@@ -142,13 +150,13 @@ public class Terminal implements Runnable {
 	void scrollUp( int rows ) {
 		for (int times = 0; times < rows; times++) {
 			// move each char up a row
-			for (int r = 1; r < VISIBLE_ROWS; r++) { 
-				for (int c = 0; c < VISIBLE_COLS; c++) {
+			for (int r = 1; r < TOTAL_LINES; r++) { 
+				for (int c = 0; c < visible_cols; c++) {
 					display[r-1][c].copy( display[r][c] );
 				}
 			}
 			// clear the bottom row
-			clearLine( VISIBLE_ROWS - 1 );
+			clearLine( TOTAL_LINES - 1 );
 		}
 	}
 
@@ -228,7 +236,8 @@ public class Terminal implements Runnable {
 		for (int l = 8; l < visible_lines; l++) {
 			fromKbdQ.offer( (byte) ('0' + l % 10) );
 			fromKbdQ.offer( NL );
-;		}
+		}
+		fromKbdQ.offer( (byte) ('0' + visible_lines % 10) );
 	}
 
 	@Override
@@ -327,9 +336,9 @@ public class Terminal implements Runnable {
 
 				if (readingWindowAddressX) { 
 					newXaddress = (int) ch & 0x7f;
-					if (newXaddress >= VISIBLE_COLS) {
+					if (newXaddress >= visible_cols) {
 						System.out.printf( "Warning: host attempt to set cursor off screen at column %d\n", newXaddress );
-						newXaddress = newXaddress - VISIBLE_COLS;
+						newXaddress = newXaddress - visible_cols;
 					}
 					if (newXaddress == 127) {
 						// special case - x stays the same - see D410 User Manual p.3-25
@@ -349,13 +358,13 @@ public class Terminal implements Runnable {
 						// special case - y stays the same - see D410 User Manual p.3-25
 						newYaddress = cursorY;
 					}
-					if (cursorY >= VISIBLE_ROWS) { 
+					if (cursorY >= visible_lines) { 
 						System.out.printf( "Warning: host attempt to set cursor off screen to row %d\n", cursorY );
 						// see end of p.3-24 in D410 User Manual
 						if (roll_enabled) {
-							scrollUp( cursorY - (VISIBLE_ROWS - 1));
+							scrollUp( cursorY - (visible_lines - 1));
 						}
-						cursorY = cursorY - VISIBLE_ROWS; 
+						cursorY = cursorY - visible_lines; 
 					}
 					// System.out.printf("Terminal - moving cursor to Row %d,  Column %d\n", cursorY, cursorX);
 					readingWindowAddressY = false;
@@ -537,19 +546,19 @@ public class Terminal implements Runnable {
 					skipChar = true;
 					break;
 				case CURSOR_UP:
-					if (cursorY > 0) { cursorY--; } else { cursorY = VISIBLE_ROWS - 1; }
+					if (cursorY > 0) { cursorY--; } else { cursorY = visible_lines - 1; }
 					skipChar = true;
 					status.dirty = true;
 					break;
 				case CURSOR_DOWN:
-					if (cursorY < VISIBLE_ROWS - 2 ) { cursorY++; } else { cursorY = 0; }
+					if (cursorY < visible_lines - 1 ) { cursorY++; } else { cursorY = 0; }
 					status.dirty = true;
 					skipChar = true;
 					break;	
 				case CURSOR_RIGHT:
-					if (cursorX < VISIBLE_COLS - 2) { cursorX++; } else { 
+					if (cursorX < visible_cols - 1) { cursorX++; } else { 
 						cursorX = 0; 
-						if (cursorY < VISIBLE_ROWS - 2 ) { cursorY++; } else { cursorY = 0; }
+						if (cursorY < visible_lines - 2 ) { cursorY++; } else { cursorY = 0; }
 					}
 					status.dirty = true;
 					skipChar = true;
@@ -558,8 +567,8 @@ public class Terminal implements Runnable {
 					if (cursorX > 0) { 
 						cursorX--; 
 					} else { 
-						cursorX = VISIBLE_COLS - 1; 
-						if (cursorY > 0) { cursorY--; } else { cursorY = VISIBLE_ROWS - 1; }
+						cursorX = visible_cols - 1; 
+						if (cursorY > 0) { cursorY--; } else { cursorY = visible_lines - 1; }
 					}
 					status.dirty = true;
 					skipChar = true;
@@ -578,7 +587,7 @@ public class Terminal implements Runnable {
 					skipChar = true;
 					break;
 				case ERASE_EOL:
-					for (int col = cursorX; col < VISIBLE_COLS; col++) {
+					for (int col = cursorX; col < visible_cols; col++) {
 						display[cursorY][col].clearToSpace();
 					}
 					status.dirty = true;
@@ -627,8 +636,8 @@ public class Terminal implements Runnable {
 				}
 
 				// wrap due to hitting margin or new line?
-				if (cursorX == VISIBLE_COLS || ch == NL) {
-					if (cursorY == VISIBLE_ROWS - 1) { // hit bottom of screen
+				if (cursorX == visible_cols || ch == NL) {
+					if (cursorY == visible_lines - 1) { // hit bottom of screen
 						if (roll_enabled) {
 							this.scrollUp( 1 );
 						} else {
@@ -653,6 +662,8 @@ public class Terminal implements Runnable {
 				// finally, put the character in the displayable character matrix
 				// it will get picked up on next refresh by Crt
 				if (ch > 0) {
+					assert cursorX <= MAX_VISIBLE_COLS;
+					assert cursorY <= MAX_VISIBLE_LINES;
 					display[cursorY][cursorX].set(  ch, blinking, dimmed, reversedVideo, underscored, protectd );
 				} else {
 					System.out.printf( "Terminal: Warning - Ignoring character with code %d\n",  ch );
