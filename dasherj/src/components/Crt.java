@@ -18,6 +18,7 @@ import javax.swing.JPanel;
  * 
  * @author steve
  * 
+ * v. 0.6   Rename screen to terminal
  * v. 0.5 - Remove 'rasterised' font look
  * 			Improve performance and realism by eliminating affinetransform
  * 			Fix printing to scale and position reasonably
@@ -34,18 +35,18 @@ public class Crt extends JPanel implements Printable {
 	private final BasicStroke  smoothStroke;
 	private BDFfont bdfFont;
 	
-	private Terminal screen;
+	private Terminal terminal;
 	
 	Color bgColor = Color.BLACK;
 	Color fgColor = Color.GREEN;
 	Color dimColor = Color.decode( "0x008800" ); // half-green
 		
-	public Crt( Terminal screen ) {
+	public Crt( Terminal terminal ) {
 		super();
 		
 		smoothStroke = new BasicStroke( 1.5f,  BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND );
 		
-		this.screen = screen;
+		this.terminal = terminal;
 		this.setOpaque( true );
 		this.setBackground( Color.BLACK );
 		this.setForeground( Color.GREEN );
@@ -62,7 +63,7 @@ public class Crt extends JPanel implements Printable {
 
 	public void setCharSize( int y, int x ) {
 		// setPreferredSize( new Dimension( (int) (x * charWidth * xScale), (int) (y * charHeight * yScale) ) );
-		setPreferredSize( new Dimension( (int) (x * charWidth), (int) (y * charHeight) ) );
+		setPreferredSize( new Dimension( (int) (x * charWidth), (int) ((y+1) * charHeight) ) );
 	}
 	
 	
@@ -86,14 +87,14 @@ public class Crt extends JPanel implements Printable {
     	renderCharCells( g );
     	
     	// draw the cursor - if on-screen
-    	synchronized( screen ) { // don't want cursor being moved while we are drawing it...
-    		if (screen.cursorX < Terminal.VISIBLE_COLS && screen.cursorY < Terminal.VISIBLE_COLS) {
+    	synchronized( terminal ) { // don't want cursor being moved while we are drawing it...
+    		if (terminal.cursorX < terminal.visible_cols && terminal.cursorY < terminal.visible_lines) {
     			g.setColor( fgColor );
-    			g.fillRect( screen.cursorX * charWidth, screen.cursorY* charHeight, charWidth, charHeight );
-    			if (screen.display[screen.cursorY][screen.cursorX].charValue != ' ') {
+    			g.fillRect( terminal.cursorX * charWidth, terminal.cursorY* charHeight, charWidth, charHeight );
+    			if (terminal.display[terminal.cursorY][terminal.cursorX].charValue != ' ') {
     				g.setColor( bgColor );
-    				drawChar( g, (byte) ' ', screen.cursorX * charWidth, (screen.cursorY + 1) * charHeight );
-    				drawChar( g, screen.display[screen.cursorY][screen.cursorX].charValue, screen.cursorX * charWidth, (screen.cursorY + 1) * charHeight );
+    				drawChar( g, (byte) ' ', terminal.cursorX * charWidth, (terminal.cursorY + 1) * charHeight );
+    				drawChar( g, terminal.display[terminal.cursorY][terminal.cursorX].charValue, terminal.cursorX * charWidth, (terminal.cursorY + 1) * charHeight );
     			}
     		}
     	}
@@ -109,16 +110,16 @@ public class Crt extends JPanel implements Printable {
      */
     private void renderCharCells( Graphics2D g ) {
     	
-       	for (int y = 0; y < Terminal.VISIBLE_ROWS; y++) {
-    		for (int x = 0; x < Terminal.VISIBLE_COLS; x++) {
+       	for (int y = 0; y < terminal.visible_lines; y++) {
+    		for (int x = 0; x < terminal.visible_cols; x++) {
     			
     			// first fill the cell with the background colour and set the right foreground colour
-    			if (screen.display[y][x].reverse) {
+    			if (terminal.display[y][x].reverse) {
     				g.setColor( fgColor );
     				g.fillRect( x * charWidth, y * charHeight, charWidth, charHeight );
     				g.setColor( bgColor );
     			} else {
-    				if (screen.display[y][x].dim) {
+    				if (terminal.display[y][x].dim) {
     					g.setColor( dimColor );
     				} else {
     					g.setColor( fgColor );
@@ -126,15 +127,15 @@ public class Crt extends JPanel implements Printable {
     			}
     			
     			// draw the character but handle blinking
-    			if (screen.blinking_enabled && screen.blinkState && screen.display[y][x].blink) {
+    			if (terminal.blinking_enabled && terminal.blinkState && terminal.display[y][x].blink) {
     				g.setColor( bgColor );
     	    		g.fillRect( x * charWidth, (y + 1) * charHeight, charWidth, charHeight );
     			} else {
-   					drawChar( g, screen.display[y][x].charValue, x * charWidth, ((y + 1) * charHeight ) );
+   					drawChar( g, terminal.display[y][x].charValue, x * charWidth, ((y + 1) * charHeight ) );
        			}
     			
     			// underscore
-    			if (screen.display[y][x].underscore) {
+    			if (terminal.display[y][x].underscore) {
     				g.drawLine( x * charWidth, (y + 1) * charHeight, (x + 1) * charWidth, (y + 1) * charHeight );
     			}
     		}
