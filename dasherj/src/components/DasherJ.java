@@ -5,6 +5,7 @@ package components;
  *        Fix display of serial port in status bar
  *        --host= option added
  *        Rename screen to terminal
+ *        Lock main window size
  * v. 0.5 Add ErPage. CR. ErEOL buttons
  *        Implement session logging as per v.0.4
  */
@@ -86,6 +87,9 @@ public class DasherJ extends JPanel implements ActionListener {
         keyFocusManager.addKeyEventDispatcher( keyHandler );
 
         window.pack();
+        
+        // we don't want the user randomly farting around with the terminal size..
+        window.setResizable( false );
              
         statusBar = new DasherStatusBar( status );
         add( statusBar, BorderLayout.SOUTH );
@@ -434,7 +438,7 @@ public class DasherJ extends JPanel implements ActionListener {
 									   "<html><center>"+
 									   "Dasher Terminal Emulator<br><br>" +
 									   "Version %s (%s)<br><br>" +
-									   "�%s Steve Merrony" +
+									   "\u00a9 Steve Merrony" +
 									   "</center></html>",
 									   VERSION, RELEASE_STATUS, COPYRIGHT_YEAR ),
 									   "About DasherJ", 
