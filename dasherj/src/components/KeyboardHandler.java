@@ -4,6 +4,17 @@ import java.awt.KeyEventDispatcher;
 import java.awt.event.KeyEvent;
 import java.util.concurrent.BlockingQueue;
 
+/***
+ * This class takes keyboard input from the user, does any special handling required
+ * for DASHER compatibility, then passes the data on to the fromKbdQ for transmission
+ * to the host by either TelnetWriter or SerialWrite 
+ * 
+ * @author steve
+ * 
+ * v.0.6 -  Fix sending of NewLines to be DASHER-compliant (and not doubled-up!)
+ * 
+ */
+
 public class KeyboardHandler implements KeyEventDispatcher {
 	
 	BlockingQueue<Byte> lFromKbdQ;
@@ -25,7 +36,7 @@ public class KeyboardHandler implements KeyEventDispatcher {
 			keyReleased( kev );
 			break;
 		case KeyEvent.KEY_TYPED:
-			keyTyped( kev );
+			// we are using KEY_RELEASED in all normal cases
 			break;
 		default:
 			System.out.printf( "KeyboardHandler: Warning - Unknown Key Event Type\n" );
@@ -109,13 +120,9 @@ public class KeyboardHandler implements KeyEventDispatcher {
 			lFromKbdQ.offer( (byte) 10 );
 			break;
 		default:
+			lFromKbdQ.offer( (byte) arg0.getKeyChar() );
 			break;
 		}
-	}
-
-	private void keyTyped(KeyEvent arg0) {
-			
-		lFromKbdQ.offer( (byte) arg0.getKeyChar() );
 	}
 
 }

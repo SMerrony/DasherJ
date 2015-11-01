@@ -38,7 +38,7 @@ public class TelnetWriter implements Runnable {
 			
 			try {
 				w.write(b);
-				//System.out.printf( "Wrote to host socket: %s\n", b);
+				// System.out.printf( "Wrote to host socket: <%s> Hex: %x\n", b, b );
 			} catch (IOException e) {
 				//				e.printStackTrace();
 			}
