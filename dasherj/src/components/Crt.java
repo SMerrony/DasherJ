@@ -19,6 +19,7 @@ import javax.swing.JPanel;
  * @author steve
  * 
  * v. 0.6   Rename screen to terminal
+ * 			Fix scaling of printing (reduce from 4x to 2x)
  * v. 0.5 - Remove 'rasterised' font look
  * 			Improve performance and realism by eliminating affinetransform
  * 			Fix printing to scale and position reasonably
@@ -28,7 +29,7 @@ public class Crt extends JPanel implements Printable {
 	
 	private static final String DASHER_FONT_BDF = "/resources/D410-a-12.bdf";	
 	private static final int PTS_PER_INCH = 72;
-	private static final float PRINT_SCALE_FACTOR = 4.0f;
+	private static final float PRINT_SCALE_FACTOR = 2.0f;
 	
 	private int charWidth = BDFfont.CHAR_PIXEL_WIDTH; 
 	private int charHeight = BDFfont.CHAR_PIXEL_HEIGHT * 2; 
