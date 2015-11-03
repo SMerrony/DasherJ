@@ -1,6 +1,5 @@
 package components;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -19,7 +18,9 @@ import javax.swing.JPanel;
  * @author steve
  * 
  * v. 0.6   Rename screen to terminal
+ * 			Big performance increase by drawing character BufferedImages rather than individual pixels
  * 			Fix scaling of printing (reduce from 4x to 2x)
+ * 			Remove drawChar method and in-line
  * v. 0.5 - Remove 'rasterised' font look
  * 			Improve performance and realism by eliminating affinetransform
  * 			Fix printing to scale and position reasonably
@@ -27,30 +28,33 @@ import javax.swing.JPanel;
  */
 public class Crt extends JPanel implements Printable {
 	
-	private static final String DASHER_FONT_BDF = "/resources/D410-a-12.bdf";	
+	private static final String DASHER_FONT_BDF = "/resources/D410-a-12.bdf";
+	private static final int MIN_VISIBLE = 32, MAX_VISIBLE = 128;
 	private static final int PTS_PER_INCH = 72;
 	private static final float PRINT_SCALE_FACTOR = 2.0f;
 	
 	private int charWidth = BDFfont.CHAR_PIXEL_WIDTH; 
-	private int charHeight = BDFfont.CHAR_PIXEL_HEIGHT * 2; 
-	private final BasicStroke  smoothStroke;
+	private int charHeight = BDFfont.CHAR_PIXEL_HEIGHT; 
 	private BDFfont bdfFont;
 	
 	private Terminal terminal;
 	
+	// private AffineTransform transform;
+	
 	Color bgColor = Color.BLACK;
-	Color fgColor = Color.GREEN;
-	Color dimColor = Color.decode( "0x008800" ); // half-green
+	Color fgColor = Color.WHITE;
+	Color dimColor = Color.LIGHT_GRAY;
 		
 	public Crt( Terminal terminal ) {
 		super();
 		
-		smoothStroke = new BasicStroke( 1.5f,  BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND );
+		new AffineTransform();
+		//transform = AffineTransform.getScaleInstance( 1.0, 2.0 );
 		
 		this.terminal = terminal;
 		this.setOpaque( true );
 		this.setBackground( Color.BLACK );
-		this.setForeground( Color.GREEN );
+		this.setForeground( Color.WHITE );
 		
 		bdfFont = new BDFfont();
 
@@ -63,8 +67,7 @@ public class Crt extends JPanel implements Printable {
 	}
 
 	public void setCharSize( int y, int x ) {
-		// setPreferredSize( new Dimension( (int) (x * charWidth * xScale), (int) (y * charHeight * yScale) ) );
-		setPreferredSize( new Dimension( (int) (x * charWidth), (int) ((y+1) * charHeight) ) );
+		setPreferredSize( new Dimension( (int) (x * charWidth), (int) ((y+2) * charHeight) ) );
 	}
 	
 	
@@ -81,7 +84,7 @@ public class Crt extends JPanel implements Printable {
     	
     	Graphics2D g = (Graphics2D) pG;
     	// g.setTransform( scaleTransform );
-    	g.setStroke( smoothStroke );
+    	//g.setTransform( transform );
     	
     	super.paintComponent( g );
 
@@ -94,8 +97,10 @@ public class Crt extends JPanel implements Printable {
     			g.fillRect( terminal.cursorX * charWidth, terminal.cursorY* charHeight, charWidth, charHeight );
     			if (terminal.display[terminal.cursorY][terminal.cursorX].charValue != ' ') {
     				g.setColor( bgColor );
-    				drawChar( g, (byte) ' ', terminal.cursorX * charWidth, (terminal.cursorY + 1) * charHeight );
-    				drawChar( g, terminal.display[terminal.cursorY][terminal.cursorX].charValue, terminal.cursorX * charWidth, (terminal.cursorY + 1) * charHeight );
+    				g.drawImage( bdfFont.charReverseImages[(int) terminal.display[terminal.cursorY][terminal.cursorX].charValue], 
+    							 null, 
+    							 terminal.cursorX * charWidth, 
+    							 terminal.cursorY * charHeight );
     			}
     		}
     	}
@@ -111,6 +116,8 @@ public class Crt extends JPanel implements Printable {
      */
     private void renderCharCells( Graphics2D g ) {
     	
+    	byte charVal;
+    	
        	for (int y = 0; y < terminal.visible_lines; y++) {
     		for (int x = 0; x < terminal.visible_cols; x++) {
     			
@@ -120,11 +127,9 @@ public class Crt extends JPanel implements Printable {
     				g.fillRect( x * charWidth, y * charHeight, charWidth, charHeight );
     				g.setColor( bgColor );
     			} else {
-    				if (terminal.display[y][x].dim) {
-    					g.setColor( dimColor );
-    				} else {
-    					g.setColor( fgColor );
-    				}
+    				g.setColor( bgColor );
+    				g.fillRect( x * charWidth, y * charHeight, charWidth, charHeight );
+    				g.setColor( fgColor );
     			}
     			
     			// draw the character but handle blinking
@@ -132,7 +137,16 @@ public class Crt extends JPanel implements Printable {
     				g.setColor( bgColor );
     	    		g.fillRect( x * charWidth, (y + 1) * charHeight, charWidth, charHeight );
     			} else {
-   					drawChar( g, terminal.display[y][x].charValue, x * charWidth, ((y + 1) * charHeight ) );
+    				charVal = terminal.display[y][x].charValue;
+    				if (charVal >= MIN_VISIBLE && charVal <= MAX_VISIBLE) {
+    					if (terminal.display[y][x].reverse) {
+    						g.drawImage( bdfFont.charReverseImages[(int) charVal], null, x * charWidth, y * charHeight );
+    					} else if (terminal.display[y][x].dim) {
+    						g.drawImage( bdfFont.charDimImages[(int) charVal], null, x * charWidth, y * charHeight );
+    					} else {
+    						g.drawImage( bdfFont.charImages[(int) charVal], null, x * charWidth, y * charHeight );
+    					}
+    				}
        			}
     			
     			// underscore
@@ -143,31 +157,6 @@ public class Crt extends JPanel implements Printable {
     	}
     }
     
-    /***
-     * Draw a character from the BDF-derived font
-     * 
-     * @param g
-     * @param charValue
-     * @param x
-     * @param y
-     */
-    private void drawChar( final Graphics2D g, final byte charValue, final int x, final int y) {
-		
-    	int asciiCode = (int) charValue;
-
-    	if (asciiCode < bdfFont.map.length && bdfFont.map[asciiCode].loaded) {
-    		for (int cy = 0; cy < 12; cy++) {
-    			for (int cx = 0; cx < 10; cx++) {
-    				if (bdfFont.map[asciiCode].row[cy].get(cx)) {
-    					//g.drawLine( x + cx, y - cy, x + cx + 1, y - cy );
-    					g.drawLine( x + cx, y - (cy * 2), x + cx + 1, y - (cy * 2) );
-    				}
-    			}
-    		}
-    	}
-		
-	}
-
 	/* We don't actually print the screen graphic here, a new graphic is drawn for printing
      * 
      * @see java.awt.print.Printable#print(java.awt.Graphics, java.awt.print.PageFormat, int)

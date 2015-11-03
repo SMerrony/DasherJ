@@ -1,40 +1,35 @@
 package components;
 
 /***
+ * Version 0.6 Switch to Raster for chars
  * Version 0.5 Add Constants and sync with v.0.4
  */
 
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.BitSet;
 
 public final class BDFfont {
 
 	public static final int CHAR_PIXEL_WIDTH  = 10;
 	public static final int CHAR_PIXEL_HEIGHT = 12;
+	public static final int CHARSET_SIZE = 128; 
 
 	public int charCount;
-	public CharBitMap map[];
+	public BufferedImage charImages[], charDimImages[], charReverseImages[];
 	public boolean loaded;
 
-	class CharBitMap {
-		boolean loaded;
-		BitSet row[];
-
-		CharBitMap() {
-			row = new BitSet[CHAR_PIXEL_HEIGHT];
-			for (int i = 0; i < CHAR_PIXEL_HEIGHT; i++) {
-				row[i] = new BitSet( CHAR_PIXEL_WIDTH );
-			}
-		}
-	}
-
 	public BDFfont() {
-		map = new CharBitMap[128];
-		for (int i = 0; i < 128; i++) {
-			map[i] = new CharBitMap();
+		charImages        = new BufferedImage[CHARSET_SIZE];
+		charDimImages     = new BufferedImage[CHARSET_SIZE];
+		charReverseImages = new BufferedImage[CHARSET_SIZE];
+		for (int i = 0; i < CHARSET_SIZE; i++) {
+			charImages[i]        = new BufferedImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
+			charDimImages[i]     = new BufferedImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT, BufferedImage.TYPE_BYTE_GRAY );
+			charReverseImages[i] = new BufferedImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT, BufferedImage.TYPE_BYTE_GRAY );
 		}
 		loaded = false;
 	}
@@ -43,7 +38,7 @@ public final class BDFfont {
 
 		BufferedReader bfr;
 		bfr = new BufferedReader(  new InputStreamReader( fontFileStream )  );
-
+		WritableRaster raster, dimRaster, reverseRaster;
 
 		try {
 			while (!(bfr.readLine()).equals( "ENDPROPERTIES" )); // skip over header
@@ -73,19 +68,28 @@ public final class BDFfont {
 
 				// skip the BITMAP line
 				bfr.readLine();
-
+				
+				raster = charImages[asciiCode].getRaster();
+				dimRaster = charDimImages[asciiCode].getRaster();
+				reverseRaster = charReverseImages[asciiCode].getRaster();
+				// fill the reverse raster with whiteness
+				for (int x = 0; x < CHAR_PIXEL_WIDTH; x++)
+					for (int y = 0; y < CHAR_PIXEL_HEIGHT; y++)
+						reverseRaster.setSample( x, y, 0, 255 ); 
+				
 				// load the actual bitmap for this char a row at a time from the top down
 				for (int bitMapLine = pixHeight - 1; bitMapLine >= 0; bitMapLine--) {
 					String lineStr = bfr.readLine();
 					byte lineByte = (byte) ( Integer.parseInt( lineStr, 16 ) );
 					for (int i=0; i < pixWidth; i++) {
 						boolean pix = ((lineByte & 0x80) >> 7) == 1; // test the MSB
-						map[asciiCode].row[bitMapLine + yOffset].set( xOffset + i, pix ); // FIXME: !!!
+						int thisYoffset = CHAR_PIXEL_HEIGHT - (1 + bitMapLine + yOffset);
+						raster.setSample( xOffset + i, thisYoffset, 0, pix ? 255 : 0 );
+						reverseRaster.setSample( xOffset + i, thisYoffset, 0, pix ? 0 : 255 );
+						dimRaster.setSample( xOffset + i, thisYoffset, 0, pix ? 127 : 0 );
 						lineByte = (byte) (lineByte << 1);
 					}
 				}
-				map[asciiCode].loaded = true;
-
 
 			}
 		} catch (IOException e) {
