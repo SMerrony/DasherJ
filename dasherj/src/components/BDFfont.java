@@ -20,12 +20,14 @@ public final class BDFfont {
 
 	public int charCount;
 	public BufferedImage charImages[], charDimImages[], charReverseImages[];
+	public boolean charLoaded[];
 	public boolean loaded;
 
 	public BDFfont() {
 		charImages        = new BufferedImage[CHARSET_SIZE];
 		charDimImages     = new BufferedImage[CHARSET_SIZE];
 		charReverseImages = new BufferedImage[CHARSET_SIZE];
+		charLoaded        = new boolean[CHARSET_SIZE];	
 		for (int i = 0; i < CHARSET_SIZE; i++) {
 			charImages[i]        = new BufferedImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
 			charDimImages[i]     = new BufferedImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT, BufferedImage.TYPE_BYTE_GRAY );
@@ -90,7 +92,7 @@ public final class BDFfont {
 						lineByte = (byte) (lineByte << 1);
 					}
 				}
-
+				charLoaded[asciiCode] = true;
 			}
 		} catch (IOException e) {
 			// e.printStackTrace();

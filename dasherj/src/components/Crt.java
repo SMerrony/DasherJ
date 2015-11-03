@@ -138,7 +138,7 @@ public class Crt extends JPanel implements Printable {
     	    		g.fillRect( x * charWidth, (y + 1) * charHeight, charWidth, charHeight );
     			} else {
     				charVal = terminal.display[y][x].charValue;
-    				if (charVal >= MIN_VISIBLE && charVal <= MAX_VISIBLE) {
+    				if (charVal >= MIN_VISIBLE && charVal <= MAX_VISIBLE && bdfFont.charLoaded[charVal]) {
     					if (terminal.display[y][x].reverse) {
     						g.drawImage( bdfFont.charReverseImages[(int) charVal], null, x * charWidth, y * charHeight );
     					} else if (terminal.display[y][x].dim) {
