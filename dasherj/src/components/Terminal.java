@@ -6,6 +6,7 @@ import java.util.concurrent.BlockingQueue;
 /***
  * Abstraction of what is currently displayed on the terminal
  * Display behaviour (not keyboard) emulation happens here
+ * This class manipulates the display matrix of Cells which is shared with Crt.
  * 
  * @author steve
  * 

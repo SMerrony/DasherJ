@@ -1,7 +1,12 @@
 package components;
 
-/***
+/**
+ * DasherJ - the main class for the emulator
+ * 
+ * @author steve
+ * 
  * v. 0.7 Eliminate separate blink timer
+ * 		  Abstract toolbar (F-keys) into separate FKeyGrid class
  * v. 0.6 IP in status bar
  *        Fix display of serial port in status bar
  *        --host= option added
@@ -14,8 +19,6 @@ package components;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.print.PrinterException;
-import java.awt.print.PrinterJob;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -30,15 +33,15 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import components.Status.ConnectionType;
 
-public class DasherJ extends JPanel implements ActionListener {
+public class DasherJ extends JPanel {
 	
 	private static final int CRT_REFRESH_MS = 50;  // Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms
 	private static final int CRT_BLINK_COUNTER = 10;
 	private static Timer updateCrtTimer;
 
-	private static final double VERSION = 0.6;
+	private static final double VERSION = 0.7;
 	private static final int COPYRIGHT_YEAR = 2015;
-	private static final String RELEASE_STATUS = "Prerelease";
+	private static final String RELEASE_STATUS = "Alpha";
 	private static final String HELP_URL_TEXT = "http://stephenmerrony.co.uk/dg/";
 	
 	private static final String ICON = "/resources/DGlogoOrange.png";
@@ -52,6 +55,7 @@ public class DasherJ extends JPanel implements ActionListener {
 	static JToolBar toolbar;
 	KeyboardFocusManager keyFocusManager;
 	KeyboardHandler keyHandler;
+	static FKeyGrid fkeyGrid;
 	static DasherStatusBar statusBar;
 	static LocalClient lc;
 	static SerialClient sc;
@@ -71,8 +75,8 @@ public class DasherJ extends JPanel implements ActionListener {
 		
         window.setJMenuBar( createMenuBar() );
         
-        toolbar = new JToolBar();
-        addToolButtons( toolbar );
+        toolbar = new FKeyGrid( status, fromKbdQ );
+        toolbar.setFloatable( false );
         add( toolbar, BorderLayout.PAGE_START );
         
         crt = new Crt( terminal );
@@ -457,158 +461,6 @@ public class DasherJ extends JPanel implements ActionListener {
 	    }
 	}
 	
-	protected  void addToolButtons( JToolBar tb ) {
-		
-		tb.add( makeToolbarButton( "Brk", "Command-Break" ) );
-		tb.addSeparator();		
-		tb.add( makeToolbarButton( "F1" ) );
-		tb.add( makeToolbarButton( "F2" ) );
-		tb.add( makeToolbarButton( "F3" ) );
-		tb.add( makeToolbarButton( "F4" ) );
-		tb.add( makeToolbarButton( "F5" ) );
-		tb.addSeparator();
-		tb.add( makeToolbarButton( "F6" ) );
-		tb.add( makeToolbarButton( "F7" ) );
-		tb.add( makeToolbarButton( "F8" ) );
-		tb.add( makeToolbarButton( "F9" ) );
-		tb.add( makeToolbarButton( "F10" ) );
-		tb.addSeparator();
-		tb.add( makeToolbarButton( "F11" ) );
-		tb.add( makeToolbarButton( "F12" ) );
-		tb.add( makeToolbarButton( "F13" ) );
-		tb.add( makeToolbarButton( "F14" ) );
-		tb.add( makeToolbarButton( "F15" ) );
-		tb.addSeparator();
-		tb.add( makeToolbarButton( "ErPg", "Erase Page" ) );
-		tb.add( makeToolbarButton( "CR", "CR" ) );
-		tb.add( makeToolbarButton( "ErEOL", "Erase EOL" ) );
-		tb.addSeparator();
-		tb.add( makeToolbarButton( "LocPrt", "Local Print" ) );
-		// tb.add( makeToolbarButton( "SR", "Scroll Rate" ) );
-		tb.add( makeToolbarButton( "Hold" ) );
-
-	}
-	
-	protected JButton makeToolbarButton( String label, String tooltip ) {
-		JButton button = makeToolbarButton( label );
-		button.setToolTipText( tooltip );
-		return button;
-	}
-
-	protected JButton makeToolbarButton( String label ) {
-		JButton button = new JButton( label );
-		button.setActionCommand( label );
-		button.addActionListener( this );
-		
-		return button;
-	}
-	
-	@Override
-	public void actionPerformed( ActionEvent ae ) {
-		
-		byte modifier = 0;
-		
-		if (status.control_pressed && status.shift_pressed) { modifier = -80; }  // Ctrl-Shift
-		if (status.control_pressed && !status.shift_pressed) { modifier = -64; } // Ctrl
-		if (!status.control_pressed && status.shift_pressed) { modifier = -16; } // Shift
-		
-		// these are for the toolbar buttons - not the real function keys
-		String cmd = ae.getActionCommand();
-		switch (cmd) {
-		case "Brk":
-			fromKbdQ.offer( (byte) 2 );  // special CMD_BREAK indicator
-			break;
-		case "F1":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (113 + modifier) );
-			break;
-		case "F2":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (114 + modifier) );
-			break;
-		case "F3":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (115 + modifier) );
-			break;
-		case "F4":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (116 + modifier) );
-			break;
-		case "F5":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (117 + modifier) );
-			break;
-		case "F6":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (118 + modifier) );
-			break;
-		case "F7":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (119 + modifier) );
-			break;
-		case "F8":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (120 + modifier) );
-			break;
-		case "F9":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (121 + modifier) );
-			break;
-		case "F10":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (122 + modifier) );
-			break;
-		case "F11":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (123 + modifier) );
-			break;
-		case "F12":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (124 + modifier) );
-			break;
-		case "F13":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (125 + modifier) );
-			break;
-		case "F14":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (126 + modifier) );
-			break;
-		case "F15":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (112 + modifier) );
-			break;
-		case "ErPg":
-			fromKbdQ.offer( (byte) 12 );
-			break;
-		case "CR":
-			fromKbdQ.offer( (byte) 13 );
-			break;
-		case "ErEOL":
-			fromKbdQ.offer( (byte) 11 );
-			break;
-		case "LocPrt":
-			PrinterJob printJob = PrinterJob.getPrinterJob();
-			printJob.setPrintable( crt );
-			boolean ok = printJob.printDialog();
-			if (ok) {
-				try {
-					printJob.print();
-				} catch (PrinterException pe) {
-					
-				}
-			}
-			break;
-		case "Hold":
-			status.holding = !status.holding;
-			break;
-		default:
-			System.out.printf( "DasherJ - Warning: Unknown ActionEvent (%s) received.\n", cmd );
-			break;	
-		}
-
-	}
-
     /**
      * Create the GUI and show it.  For thread safety,
      * this method should be invoked from the
