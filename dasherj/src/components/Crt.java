@@ -7,7 +7,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
-import javax.swing.JPanel;
+import javax.swing.JComponent;
 
 /**
  * Crt represents the glass screen of the visual display Terminal.
@@ -16,7 +16,8 @@ import javax.swing.JPanel;
  * All painting to the main screen area happens here.
  * 
  * @author steve
- * 
+ * v. 0.7   Restore default scaling appearance (all chars double-height)
+ * 			Small tidy-ups
  * v. 0.6   Rename screen to terminal
  * 			Big performance increase by drawing character BufferedImages rather than individual pixels
  * 			Fix scaling of printing (reduce from 4x to 2x)
@@ -26,7 +27,7 @@ import javax.swing.JPanel;
  * 			Fix printing to scale and position reasonably
  *
  */
-public class Crt extends JPanel implements Printable {
+public class Crt extends JComponent implements Printable {
 	
 	private static final String DASHER_FONT_BDF = "/resources/D410-a-12.bdf";
 	private static final int MIN_VISIBLE = 32, MAX_VISIBLE = 128;
@@ -39,17 +40,17 @@ public class Crt extends JPanel implements Printable {
 	
 	private Terminal terminal;
 	
-	// private AffineTransform transform;
+	private AffineTransform scaleTransform;
 	
 	Color bgColor = Color.BLACK;
 	Color fgColor = Color.WHITE;
 	Color dimColor = Color.LIGHT_GRAY;
 		
 	public Crt( Terminal terminal ) {
-		super();
+//		super();
 		
-		new AffineTransform();
-		//transform = AffineTransform.getScaleInstance( 1.0, 2.0 );
+    	scaleTransform = new AffineTransform();
+    	scaleTransform.scale( 1.0, 2.0 );
 		
 		this.terminal = terminal;
 		this.setOpaque( true );
@@ -66,8 +67,15 @@ public class Crt extends JPanel implements Printable {
 		this.setFocusable( true );
 	}
 
+	/** setCharSize set the size of the CRT widget in terms of character cells/
+	 * Used by DasherJ.
+	 * 
+	 * @param y
+	 * @param x
+	 */
 	public void setCharSize( int y, int x ) {
-		setPreferredSize( new Dimension( (int) (x * charWidth), (int) ((y+2) * charHeight) ) );
+
+		setPreferredSize( new Dimension( x * charWidth, (y+1) * charHeight * 2) );
 	}
 	
 	
@@ -83,13 +91,13 @@ public class Crt extends JPanel implements Printable {
     	//super.paintComponent( pG );
     	
     	Graphics2D g = (Graphics2D) pG;
-    	// g.setTransform( scaleTransform );
-    	//g.setTransform( transform );
-    	
-    	super.paintComponent( g );
+
+    	g.setTransform( scaleTransform );
+
+    	// super.paintComponent( g );
 
     	renderCharCells( g );
-    	
+	
     	// draw the cursor - if on-screen
     	synchronized( terminal ) { // don't want cursor being moved while we are drawing it...
     		if (terminal.cursorX < terminal.visible_cols && terminal.cursorY < terminal.visible_lines) {
@@ -104,6 +112,8 @@ public class Crt extends JPanel implements Printable {
     			}
     		}
     	}
+    	
+
     }
 
     /***
@@ -117,7 +127,7 @@ public class Crt extends JPanel implements Printable {
     private void renderCharCells( Graphics2D g ) {
     	
     	byte charVal;
-    	
+  	
        	for (int y = 0; y < terminal.visible_lines; y++) {
     		for (int x = 0; x < terminal.visible_cols; x++) {
     			
