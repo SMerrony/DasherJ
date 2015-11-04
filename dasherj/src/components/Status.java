@@ -24,6 +24,8 @@ public class Status {
 	public boolean logging;
 	public boolean control_pressed, shift_pressed, holding, dirty;
 	
+	public int blinkCountdown;
+	
 	public ConnectionType connection;
 	
 	public EmulationType emulation;
@@ -33,6 +35,7 @@ public class Status {
 		connection = ConnectionType.DISCONNECTED;
 		emulation = EmulationType.D200;
 		dirty = false;
+		blinkCountdown = 10;
 	}
 
 }

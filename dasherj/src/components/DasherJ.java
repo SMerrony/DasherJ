@@ -1,6 +1,7 @@
 package components;
 
 /***
+ * v. 0.7 Eliminate separate blink timer
  * v. 0.6 IP in status bar
  *        Fix display of serial port in status bar
  *        --host= option added
@@ -32,6 +33,7 @@ import components.Status.ConnectionType;
 public class DasherJ extends JPanel implements ActionListener {
 	
 	private static final int CRT_REFRESH_MS = 50;  // Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms
+	private static final int CRT_BLINK_COUNTER = 10;
 	private static Timer updateCrtTimer;
 
 	private static final double VERSION = 0.6;
@@ -85,14 +87,12 @@ public class DasherJ extends JPanel implements ActionListener {
         keyFocusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
         keyHandler = new KeyboardHandler( fromKbdQ, status );
         keyFocusManager.addKeyEventDispatcher( keyHandler );
-
-        window.pack();
-        
+      
         // we don't want the user randomly farting around with the terminal size..
         window.setResizable( false );
              
         statusBar = new DasherStatusBar( status );
-        add( statusBar, BorderLayout.SOUTH );
+        add( statusBar, BorderLayout.PAGE_END );
         statusBar.setVisible( true );
 
 	}
@@ -638,22 +638,18 @@ public class DasherJ extends JPanel implements ActionListener {
         /* Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms */
         updateCrtTimer = new Timer( CRT_REFRESH_MS, new ActionListener() {
         	public void actionPerformed( ActionEvent ae ) {
-              		if (status.dirty) {
+        			status.blinkCountdown--;
+              		if (status.dirty || status.blinkCountdown < 1) {
               			crt.repaint();  
               			status.dirty = false;
+              		}
+              		if (status.blinkCountdown < 1) {
+              			terminal.blinkState = !terminal.blinkState;
+              			status.blinkCountdown = CRT_BLINK_COUNTER;
               		}
         	}
         });
         updateCrtTimer.start();
-
-        // alternate the blink state every half-second
-        Timer blinkTimer = new Timer( 500, new ActionListener() {
-        	public void actionPerformed( ActionEvent ae ) {
-        		terminal.blinkState = !terminal.blinkState;
-        		crt.repaint();
-        	}
-        });
-        blinkTimer.start();
     }
  
     private static void parseHost( String hostArg ) {
