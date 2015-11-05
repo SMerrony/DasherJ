@@ -9,11 +9,21 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.concurrent.BlockingQueue;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JToolBar;
 import javax.swing.SwingConstants;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * FKeyGrid - this class represents the function keys and the grid of associated customisable labels
@@ -28,7 +38,8 @@ public class FKeyGrid extends JToolBar implements ActionListener {
 	GridBagLayout grid;
 	GridBagConstraints cons;
 	String fKeyStrings[][];
-	JLabel fKeyLabels[][];
+	JLabel fKeyLabels[][], templateLabel1, templateLabel2;
+	String templateTitle;
 	
 	Status status;
 	BlockingQueue<Byte> fromKbdQ;
@@ -46,71 +57,87 @@ public class FKeyGrid extends JToolBar implements ActionListener {
 		cons.fill = GridBagConstraints.BOTH;
 		cons.insets = new Insets( 1,1,1,1);
 		
+		templateLabel1 = new JLabel("", SwingConstants.CENTER );
+		templateLabel1.setFont( new Font( "Arial", Font.PLAIN, 9 ) );
+		templateLabel1.setBackground( Color.LIGHT_GRAY );
+		templateLabel1.setOpaque( true );
+		templateLabel2 = new JLabel("", SwingConstants.CENTER );
+		templateLabel2.setFont( new Font( "Arial", Font.PLAIN, 9 ) );
+		templateLabel2.setBackground( Color.LIGHT_GRAY );
+		templateLabel2.setOpaque( true );	
+		
 		cons.gridx = 0; cons.gridy = 0;
-		add( makeToolbarButton( "Loc Pr", "Local Print" ), cons );
+		add( makeFKeyButton( "Loc Pr", "Local Print" ), cons );
 		
 		cons.gridx = 0; cons.gridy = 4;
-		add( makeToolbarButton( "Brk", "Command-Break" ), cons );
+		add( makeFKeyButton( "Brk", "Command-Break" ), cons );
 		
 		cons.gridx = 1; cons.gridy = 4;
-		add( makeToolbarButton( "F1" ), cons );
+		add( makeFKeyButton( "F1" ), cons );
 		cons.gridx = 2; cons.gridy = 4;
-		add( makeToolbarButton( "F2" ), cons );
+		add( makeFKeyButton( "F2" ), cons );
 		cons.gridx = 3; cons.gridy = 4;
-		add( makeToolbarButton( "F3" ), cons );
+		add( makeFKeyButton( "F3" ), cons );
 		cons.gridx = 4; cons.gridy = 4;
-		add( makeToolbarButton( "F4" ), cons );
+		add( makeFKeyButton( "F4" ), cons );
 		cons.gridx = 5; cons.gridy = 4;
-		add( makeToolbarButton( "F5" ), cons );
+		add( makeFKeyButton( "F5" ), cons );
 		
 		cons.gridx = 6; cons.gridy = 0;
-		add( makeToolbarLabel( "<html>Ctrl-<br>Shift</html>" ), cons );
+		add( makeFKeyLabel( "<html>Ctrl-<br>Shift</html>" ), cons );
 		cons.gridx = 6; cons.gridy = 1;
-		add( makeToolbarLabel( "Ctrl" ), cons );
+		add( makeFKeyLabel( "Ctrl" ), cons );
 		cons.gridx = 6; cons.gridy = 2;
-		add( makeToolbarLabel( "Shift" ), cons );
+		add( makeFKeyLabel( "Shift" ), cons );
+		
+		cons.gridx = 6; cons.gridy = 4;
+		add( templateLabel1, cons );
 		
 		cons.gridx = 7; cons.gridy = 4;
-		add( makeToolbarButton( "F6" ), cons );
+		add( makeFKeyButton( "F6" ), cons );
 		cons.gridx = 8; cons.gridy = 4;
-		add( makeToolbarButton( "F7" ), cons );
+		add( makeFKeyButton( "F7" ), cons );
 		cons.gridx = 9; cons.gridy = 4;
-		add( makeToolbarButton( "F8" ), cons );
+		add( makeFKeyButton( "F8" ), cons );
 		cons.gridx = 10; cons.gridy = 4;
-		add( makeToolbarButton( "F9" ), cons );
+		add( makeFKeyButton( "F9" ), cons );
 		cons.gridx = 11; cons.gridy = 4;
-		add( makeToolbarButton( "F10" ), cons );
+		add( makeFKeyButton( "F10" ), cons );
 		
 		cons.gridx = 12; cons.gridy = 0;
-		add( makeToolbarLabel( "<html>Ctrl-<br>Shift</html>" ), cons );
+		add( makeFKeyLabel( "<html>Ctrl-<br>Shift</html>" ), cons );
 		cons.gridx = 12; cons.gridy = 1;
-		add( makeToolbarLabel( "Ctrl" ), cons );
+		add( makeFKeyLabel( "Ctrl" ), cons );
 		cons.gridx = 12; cons.gridy = 2;
-		add( makeToolbarLabel( "Shift" ), cons );
+		add( makeFKeyLabel( "Shift" ), cons );
+
+		cons.gridx = 12; cons.gridy = 4;
+		add( templateLabel2, cons );
 		
 		cons.gridx = 13; cons.gridy = 4;
-		add( makeToolbarButton( "F11" ), cons );
+		add( makeFKeyButton( "F11" ), cons );
 		cons.gridx = 14; cons.gridy = 4;
-		add( makeToolbarButton( "F12" ), cons );
+		add( makeFKeyButton( "F12" ), cons );
 		cons.gridx = 15; cons.gridy = 4;
-		add( makeToolbarButton( "F13" ), cons );
+		add( makeFKeyButton( "F13" ), cons );
 		cons.gridx = 16; cons.gridy = 4;
-		add( makeToolbarButton( "F14" ), cons );
+		add( makeFKeyButton( "F14" ), cons );
 		cons.gridx = 17; cons.gridy = 4;
-		add( makeToolbarButton( "F15" ), cons );
+		add( makeFKeyButton( "F15" ), cons );
 		
 		cons.gridx = 18; cons.gridy = 0;
-		add( makeToolbarButton( "Hold" ), cons );
+		add( makeFKeyButton( "Hold" ), cons );
 		cons.gridx = 18; cons.gridy = 1;
-		add( makeToolbarButton( "Er Pg", "Erase Page" ), cons );
+		add( makeFKeyButton( "Er Pg", "Erase Page" ), cons );
 		cons.gridx = 18; cons.gridy = 2;
-		add( makeToolbarButton( "CR" ), cons );
+		add( makeFKeyButton( "CR" ), cons );
 		cons.gridx = 18; cons.gridy = 3;
-		add( makeToolbarButton( "ErEOL", "Erase to EOL"), cons );
+		add( makeFKeyButton( "ErEOL", "Erase to EOL"), cons );
 		
 		// now the blank labels ready for use later
 		fKeyStrings = new String[4][15];
 		fKeyLabels = new JLabel[4][15];
+
 		for (int k = 0; k < 5; k++) {
 			for (int r = 0; r < 4; r++ ) {
 				cons.gridx = k + 1; cons.gridy = r;
@@ -143,13 +170,13 @@ public class FKeyGrid extends JToolBar implements ActionListener {
 		}
 	}
 	
-	protected JButton makeToolbarButton( String label, String tooltip ) {
-		JButton button = makeToolbarButton( label );
+	protected JButton makeFKeyButton( String label, String tooltip ) {
+		JButton button = makeFKeyButton( label );
 		button.setToolTipText( tooltip );
 		return button;
 	}
 
-	protected JButton makeToolbarButton( String label ) {
+	protected JButton makeFKeyButton( String label ) {
 		JButton button = new JButton( label );
 		button.setFont( new Font( "Arial", Font.BOLD, 9 ) );
 		button.setActionCommand( label );
@@ -157,7 +184,7 @@ public class FKeyGrid extends JToolBar implements ActionListener {
 		return button;
 	}
 	
-	protected JLabel makeToolbarLabel( String text ) {
+	protected JLabel makeFKeyLabel( String text ) {
 		JLabel label = new JLabel( text, SwingConstants.CENTER ); 
 		label.setFont( new Font( "Arial", Font.PLAIN, 9 ) );
 		return label;
@@ -268,4 +295,55 @@ public class FKeyGrid extends JToolBar implements ActionListener {
 		}
 	}
 
+	public void loadTemplate() {
+		
+		final JFileChooser templateFileChooser = new JFileChooser();
+		FileNameExtensionFilter filter = new FileNameExtensionFilter( "DasherQ/J Template", "txt" );
+		templateFileChooser.setFileFilter( filter );
+		int retVal = templateFileChooser.showOpenDialog( getTopLevelAncestor() );
+		if (retVal == JFileChooser.APPROVE_OPTION) {
+			File templateFile = templateFileChooser.getSelectedFile();
+			try {
+				InputStream templateStream  = new FileInputStream( templateFile.getAbsolutePath() );
+				BufferedReader templateReader = new BufferedReader( new InputStreamReader( templateStream ) );
+
+				templateTitle = templateReader.readLine();
+				templateLabel1.setText( templateTitle );
+				templateLabel2.setText( templateTitle );
+				
+				// clear the labels
+			    for (int k = 0; k < 15; k++) {
+			        for (int r = 3; r >= 0; r--) {
+			            fKeyLabels[r][k].setText( "" );
+			        }
+			    }
+			    
+			    // read all labels in order from template file
+			    String template_line;
+			    for (int k = 0; k < 15; k++) {
+			        for (int r = 3; r >= 0; r--) {
+			        	if ((template_line = templateReader.readLine()) == null) {
+			        		templateReader.close();
+			        		return;
+			        	}
+			        	if (template_line.length() > 0) {
+			        		fKeyLabels[r][k].setText( "<html>" +
+			        								  template_line.replace( "\\", "<br>" ) +
+			        								  "</html>" );
+			        	}
+			        }
+			    }
+			    templateReader.close();
+			    
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+
+			}
+			
+		}
+	}
+	
 }

@@ -7,6 +7,7 @@ package components;
  * 
  * v. 0.7 Eliminate separate blink timer
  * 		  Abstract toolbar (F-keys) into separate FKeyGrid class
+ * 		  Add Function Key template loading
  * v. 0.6 IP in status bar
  *        Fix display of serial port in status bar
  *        --host= option added
@@ -70,14 +71,12 @@ public class DasherJ extends JPanel {
 	
 	public DasherJ() {
 		super( new BorderLayout() );
-		
-		//setPreferredSize( new Dimension( 750,400 ) );
-		
-        window.setJMenuBar( createMenuBar() );
+		       
+		fkeyGrid = new FKeyGrid( status, fromKbdQ );
+		fkeyGrid.setFloatable( false );
+		add( fkeyGrid, BorderLayout.PAGE_START );
         
-        toolbar = new FKeyGrid( status, fromKbdQ );
-        toolbar.setFloatable( false );
-        add( toolbar, BorderLayout.PAGE_START );
+        window.setJMenuBar( createMenuBar() ); 
         
         crt = new Crt( terminal );
         crt.setCharSize( terminal.visible_lines, terminal.visible_cols );
@@ -181,6 +180,8 @@ public class DasherJ extends JPanel {
         final ButtonGroup emulGroup = new ButtonGroup();
                
         final JMenuItem selfTestMenuItem = new JMenuItem( "Self-Test" );
+        
+        final JMenuItem loadTemplateItem = new JMenuItem( "Load Template" );
         
         final JMenu serialMenu = new JMenu( "Serial" );
         final JMenuItem serialConnectMenuItem = new JMenuItem( "Connect" );
@@ -326,6 +327,17 @@ public class DasherJ extends JPanel {
         	@Override
         	public void actionPerformed( ActionEvent ae ) {
         		fromKbdQ.offer( Terminal.SELF_TEST );
+        	}
+        });
+        
+        emulMenu.addSeparator();
+        
+        emulMenu.add( loadTemplateItem );
+        loadTemplateItem.addActionListener( new ActionListener() {
+        	@Override
+        	public void actionPerformed( ActionEvent ae ) {
+        		fkeyGrid.loadTemplate();
+        		window.pack();
         	}
         });
         
