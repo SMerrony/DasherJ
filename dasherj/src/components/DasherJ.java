@@ -72,7 +72,7 @@ public class DasherJ extends JPanel {
 	public DasherJ() {
 		super( new BorderLayout() );
 		       
-		fkeyGrid = new FKeyGrid( status, fromKbdQ );
+		fkeyGrid = new FKeyGrid( status );
 		fkeyGrid.setFloatable( false );
 		add( fkeyGrid, BorderLayout.PAGE_START );
         

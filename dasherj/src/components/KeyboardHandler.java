@@ -2,16 +2,19 @@ package components;
 
 import java.awt.KeyEventDispatcher;
 import java.awt.event.KeyEvent;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
 import java.util.concurrent.BlockingQueue;
 
 /***
  * This class takes keyboard input from the user, does any special handling required
  * for DASHER compatibility, then passes the data on to the fromKbdQ for transmission
- * to the host by either TelnetWriter or SerialWrite 
+ * to the host by either TelnetWriter or SerialWriter 
  * 
  * @author steve
  * 
- * v.0.6 -  Fix sending of NewLines to be DASHER-compliant (and not doubled-up!)
+ * v. 0.7 -  Handle real function keys
+ * v. 0.6 -  Fix sending of NewLines to be DASHER-compliant (and not doubled-up!)
  * 
  */
 
@@ -19,10 +22,12 @@ public class KeyboardHandler implements KeyEventDispatcher {
 	
 	BlockingQueue<Byte> lFromKbdQ;
 	Status status;
+	private int modifier;
 
 	public KeyboardHandler(BlockingQueue<Byte> fromKbdQ, Status pStatus) {
 		lFromKbdQ = fromKbdQ;
 		status = pStatus;
+		modifier = 0;
 	}
 	
 	@Override
@@ -58,6 +63,9 @@ public class KeyboardHandler implements KeyEventDispatcher {
 			status.shift_pressed = true;
 			break;
 		}
+		if (status.control_pressed && status.shift_pressed) { modifier = -80; }  // Ctrl-Shift
+		if (status.control_pressed && !status.shift_pressed) { modifier = -64; } // Ctrl
+		if (!status.control_pressed && status.shift_pressed) { modifier = -16; } // Shift
 	}
 
 	private void keyReleased(KeyEvent arg0) {
@@ -119,6 +127,96 @@ public class KeyboardHandler implements KeyEventDispatcher {
 		case KeyEvent.VK_ENTER:
 			lFromKbdQ.offer( (byte) 10 );
 			break;
+			
+		// Function and emulated keys...	
+		case KeyEvent.VK_CLEAR:
+			lFromKbdQ.offer( (byte) 12 );
+			break;
+		case KeyEvent.VK_PAUSE:  // Dasher: HOLD
+			status.holding = !status.holding;
+			break;
+		case KeyEvent.VK_PRINTSCREEN:
+			PrinterJob printJob = PrinterJob.getPrinterJob();
+			//printJob.setPrintable( SwingUtilities.getWindowAncestor( null ));  FIXME !!!
+			boolean ok = printJob.printDialog();
+			if (ok) {
+				try {
+					printJob.print();
+				} catch (PrinterException pe) {
+					pe.printStackTrace();
+				}
+			}
+			break;	
+		case KeyEvent.VK_F16: // Dummy value for Break button
+			lFromKbdQ.offer( (byte) 2 ); // special CMD_BREAK indicator
+			break;			
+		case KeyEvent.VK_F24: // Dummy value for CR button
+			lFromKbdQ.offer( (byte) 13 );
+			break;
+		case KeyEvent.VK_F23: // Dummy value for Er EOL button
+			lFromKbdQ.offer( (byte) 11 );
+			break;
+		case KeyEvent.VK_F1:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (113 + modifier) );
+			break;
+		case KeyEvent.VK_F2:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (114 + modifier) );
+			break;
+		case KeyEvent.VK_F3:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (115 + modifier) );
+			break;
+		case KeyEvent.VK_F4:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (116 + modifier) );
+			break;
+		case KeyEvent.VK_F5:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (117 + modifier) );
+			break;
+		case KeyEvent.VK_F6:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (118 + modifier) );
+			break;
+		case KeyEvent.VK_F7:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (119 + modifier) );
+			break;
+		case KeyEvent.VK_F8:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (120 + modifier) );
+			break;
+		case KeyEvent.VK_F9:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (121 + modifier) );
+			break;
+		case KeyEvent.VK_F10:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (122 + modifier) );
+			break;
+		case KeyEvent.VK_F11:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (123 + modifier) );
+			break;
+		case KeyEvent.VK_F12:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (124 + modifier) );
+			break;
+		case KeyEvent.VK_F13:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (125 + modifier) );
+			break;
+		case KeyEvent.VK_F14:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (126 + modifier) );
+			break;
+		case KeyEvent.VK_F15:
+			lFromKbdQ.offer( (byte) 30 );
+			lFromKbdQ.offer( (byte) (112 + modifier) );
+			break;
+			
 		default:
 			lFromKbdQ.offer( (byte) arg0.getKeyChar() );
 			break;

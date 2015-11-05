@@ -7,17 +7,14 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.print.PrinterException;
-import java.awt.print.PrinterJob;
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.concurrent.BlockingQueue;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -42,12 +39,10 @@ public class FKeyGrid extends JToolBar implements ActionListener {
 	String templateTitle;
 	
 	Status status;
-	BlockingQueue<Byte> fromKbdQ;
 	
-	public FKeyGrid( Status pStatus, BlockingQueue<Byte> pFromKbdQ ) {
+	public FKeyGrid( Status pStatus ) {
 		
 		status = pStatus;
-		fromKbdQ = pFromKbdQ;
 		
 		grid = new GridBagLayout();
 		cons = new GridBagConstraints();
@@ -192,102 +187,72 @@ public class FKeyGrid extends JToolBar implements ActionListener {
 
 	@Override
 	public void actionPerformed( ActionEvent ae ) {
-	
-		byte modifier = 0;
-		
-		if (status.control_pressed && status.shift_pressed) { modifier = -80; }  // Ctrl-Shift
-		if (status.control_pressed && !status.shift_pressed) { modifier = -64; } // Ctrl
-		if (!status.control_pressed && status.shift_pressed) { modifier = -16; } // Shift
 		
 		// these are for the toolbar buttons - not the real function keys
 		String cmd = ae.getActionCommand();
 		switch (cmd) {
 		case "Brk":
-			fromKbdQ.offer( (byte) 2 );  // special CMD_BREAK indicator
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F16, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F1":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (113 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F1, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F2":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (114 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F2, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F3":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (115 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F3, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F4":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (116 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F4, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F5":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (117 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F5, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F6":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (118 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F6, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F7":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (119 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F7, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F8":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (120 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F8, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F9":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (121 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F9, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F10":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (122 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F10, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F11":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (123 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F11, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F12":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (124 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F12, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F13":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (125 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F13, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F14":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (126 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F14, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "F15":
-			fromKbdQ.offer( (byte) 30 );
-			fromKbdQ.offer( (byte) (112 + modifier) );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F15, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "Er Pg":
-			fromKbdQ.offer( (byte) 12 );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_CLEAR, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "CR":
-			fromKbdQ.offer( (byte) 13 );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F24, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "ErEOL":
-			fromKbdQ.offer( (byte) 11 );
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F23, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		case "Loc Pr":
-			PrinterJob printJob = PrinterJob.getPrinterJob();
-			//printJob.setPrintable( crt );  FIXME !!!
-			boolean ok = printJob.printDialog();
-			if (ok) {
-				try {
-					printJob.print();
-				} catch (PrinterException pe) {
-					
-				}
-			}
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_PRINTSCREEN, KeyEvent.CHAR_UNDEFINED ) );
 			break;	
 		case "Hold":
-			status.holding = !status.holding;
+			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_PAUSE, KeyEvent.CHAR_UNDEFINED ) );
 			break;
 		default:
 			System.out.printf( "DasherJ - Warning: Unknown ActionEvent (%s) received.\n", cmd );
