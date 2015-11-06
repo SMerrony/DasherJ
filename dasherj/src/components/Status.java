@@ -1,5 +1,13 @@
 package components;
 
+/***
+ * Shared status class to maintain consistent state within the application.
+ * 
+ * @author steve
+ *
+ * v. 0.7 - Add blinkCountdown
+ *
+ */
 
 public class Status {
 	
