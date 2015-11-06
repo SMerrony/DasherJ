@@ -8,6 +8,7 @@ package components;
  * v. 0.7 Eliminate separate blink timer
  * 		  Abstract toolbar (F-keys) into separate FKeyGrid class
  * 		  Add Function Key template loading
+ * 		  Add Edit/Paste function
  * v. 0.6 IP in status bar
  *        Fix display of serial port in status bar
  *        --host= option added
@@ -18,6 +19,10 @@ package components;
  */
 
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
@@ -37,7 +42,7 @@ import components.Status.ConnectionType;
 public class DasherJ extends JPanel {
 	
 	private static final int CRT_REFRESH_MS = 50;  // Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms
-	private static final int CRT_BLINK_COUNTER = 10;
+	private static final int CRT_BLINK_COUNTER = 500 / CRT_REFRESH_MS;
 	private static Timer updateCrtTimer;
 
 	private static final double VERSION = 0.7;
@@ -54,6 +59,7 @@ public class DasherJ extends JPanel {
 	static Status status;
 	static JFrame window;
 	static JToolBar toolbar;
+	Clipboard clipboard;
 	KeyboardFocusManager keyFocusManager;
 	KeyboardHandler keyHandler;
 	static FKeyGrid fkeyGrid;
@@ -71,6 +77,8 @@ public class DasherJ extends JPanel {
 	
 	public DasherJ() {
 		super( new BorderLayout() );
+		
+		clipboard = this.getToolkit().getSystemClipboard();
 		       
 		fkeyGrid = new FKeyGrid( status );
 		fkeyGrid.setFloatable( false );
@@ -170,11 +178,15 @@ public class DasherJ extends JPanel {
         JMenuBar menuBar = new JMenuBar();  
         
         // declarations up-front so we can refer to other menus if required
+        // To keep the menu structure clear only trivial actions are declared here, more involved ones below
         
         final JMenu fileMenu = new JMenu( "File" );     
         final JMenuItem startLoggingMenuItem = new JMenuItem( "Start Logging" );
         final JMenuItem stopLoggingMenuItem = new JMenuItem( "Stop Logging" );
         final JMenuItem exitMenuItem = new JMenuItem( "Exit" );
+        
+        final JMenu editMenu = new JMenu( "Edit" );
+        final JMenuItem pasteMenuItem = new JMenuItem( "Paste" );
         
         final JMenu emulMenu = new JMenu( "Emulation" );
         final ButtonGroup emulGroup = new ButtonGroup();
@@ -190,30 +202,22 @@ public class DasherJ extends JPanel {
         final JRadioButtonMenuItem b300MenuItem = new JRadioButtonMenuItem( "300 baud" );
         b300MenuItem.addActionListener( new ActionListener() {
         	@Override
-        	public void actionPerformed( ActionEvent ae) {
-        		sc.baudRate = 300;
-        	}
+        	public void actionPerformed( ActionEvent ae) { sc.baudRate = 300; }
         });
         final JRadioButtonMenuItem b1200MenuItem = new JRadioButtonMenuItem( "1200 baud" );
         b1200MenuItem.addActionListener( new ActionListener() {
         	@Override
-        	public void actionPerformed( ActionEvent ae) {
-        		sc.baudRate = 1200;
-        	}
+        	public void actionPerformed( ActionEvent ae) { sc.baudRate = 1200; }
         });
         final JRadioButtonMenuItem b9600MenuItem = new JRadioButtonMenuItem( "9600 baud" );
         b9600MenuItem.addActionListener( new ActionListener() {
         	@Override
-        	public void actionPerformed( ActionEvent ae) {
-        		sc.baudRate = 9600;
-        	}
+        	public void actionPerformed( ActionEvent ae) { sc.baudRate = 9600; }
         });
         final JRadioButtonMenuItem b19200MenuItem = new JRadioButtonMenuItem( "19200 baud" );
         b19200MenuItem.addActionListener( new ActionListener() {
         	@Override
-        	public void actionPerformed( ActionEvent ae) {
-        		sc.baudRate = 19200;
-        	}
+        	public void actionPerformed( ActionEvent ae) {  sc.baudRate = 19200; }
         });
         
         final JMenu networkMenu = new JMenu( "Network" );
@@ -224,7 +228,7 @@ public class DasherJ extends JPanel {
         final JMenuItem helpMenuItem = new JMenuItem( "Online Help" );
         final JMenuItem aboutMenuItem = new JMenuItem( "About DasherJ" );
         
-        // actually build the menu
+        // actually build the menu and add non-trivial Actions
         
         menuBar.add( fileMenu ); 
         
@@ -298,6 +302,32 @@ public class DasherJ extends JPanel {
         
         fileMenu.addSeparator();
         fileMenu.add( exitMenuItem );
+        
+        // edit
+        
+        menuBar.add( editMenu );
+        editMenu.add( pasteMenuItem );
+        
+        pasteMenuItem.addActionListener( new ActionListener() {
+			@Override
+			public void actionPerformed( ActionEvent ae ) {
+				Transferable clipData = clipboard.getContents( clipboard );
+				if (clipData != null) {
+					try {
+						if (clipData.isDataFlavorSupported( DataFlavor.stringFlavor )) {
+							String s = (String)(clipData.getTransferData( DataFlavor.stringFlavor ));
+							for (int ix = 0; ix < s.length(); ix++) {
+								fromKbdQ.offer( (byte) s.charAt( ix ) );
+							}
+						}
+					} catch (UnsupportedFlavorException ufe) {
+						// System.err.println("Flavor unsupported: " + ufe);
+					} catch (IOException ioe) {
+						// System.err.println("Data not available: " + ioe);
+					}
+				}	
+			}     	
+        });
         
         // emulation
         
