@@ -5,6 +5,7 @@ package components;
  * 
  * @author steve
  * 
+ * v. 0.8 Add resizing/zooming functionality
  * v. 0.7 Eliminate separate blink timer
  * 		  Abstract toolbar (F-keys) into separate FKeyGrid class
  * 		  Add Function Key template loading
@@ -45,7 +46,7 @@ public class DasherJ extends JPanel {
 	private static final int CRT_BLINK_COUNTER = 500 / CRT_REFRESH_MS;
 	private static Timer updateCrtTimer;
 
-	private static final double VERSION = 0.7;
+	private static final double VERSION = 0.8;
 	private static final int COPYRIGHT_YEAR = 2015;
 	private static final String RELEASE_STATUS = "Alpha";
 	private static final String HELP_URL_TEXT = "http://stephenmerrony.co.uk/dg/";
@@ -87,7 +88,8 @@ public class DasherJ extends JPanel {
         window.setJMenuBar( createMenuBar() ); 
         
         crt = new Crt( terminal );
-        crt.setCharSize( terminal.visible_lines, terminal.visible_cols );
+        crt.setPreferredSize( new Dimension( (int) (terminal.visible_cols * BDFfont.CHAR_PIXEL_WIDTH * Crt.DEFAULT_HORIZ_ZOOM),
+        								   (int) ((terminal.visible_lines + 1) * BDFfont.CHAR_PIXEL_HEIGHT * Crt.DEFAULT_VERT_ZOOM) ) );
          
         // add the crt canvas to the content pane.
         add( crt, BorderLayout.CENTER );
@@ -105,7 +107,49 @@ public class DasherJ extends JPanel {
         statusBar = new DasherStatusBar( status );
         add( statusBar, BorderLayout.PAGE_END );
         statusBar.setVisible( true );
-
+        
+	}
+	
+	public void getNewSize() {
+		Integer[] linesInts = { 24, 25, 36, 48, 66 };
+		Integer[] colsInts = { 80, 81, 120, 132, 135 };
+		String[] zoomStrings = { "Normal", "Smaller", "Tiny" };
+		JComboBox<Integer> linesCombo, colsCombo;
+		JComboBox<String> zoomCombo;
+		linesCombo = new JComboBox<Integer>( linesInts );
+		linesCombo.setSelectedIndex( 0 );
+		colsCombo = new JComboBox<Integer>( colsInts );
+		colsCombo.setSelectedIndex( 0 );
+		zoomCombo = new JComboBox<String>( zoomStrings );
+		zoomCombo.setSelectedIndex( 0 );
+		final JComponent[] inputs = new JComponent[] {
+			new JLabel( "Lines" ),	linesCombo,
+			new JLabel( "Columns" ), colsCombo,
+			new JLabel( "Zoom" ), zoomCombo
+		};
+		int rc = JOptionPane.showConfirmDialog( window, inputs, "Resize", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE );
+		if (rc == JOptionPane.OK_OPTION) {
+			int newLines = linesInts[linesCombo.getSelectedIndex()];
+			int newCols = colsInts[colsCombo.getSelectedIndex()];
+			float newHzoom = Crt.DEFAULT_HORIZ_ZOOM, newVzoom = Crt.DEFAULT_VERT_ZOOM;
+			switch (zoomCombo.getSelectedIndex()) {
+			case 0: // Normal
+				break;
+			case 1: // Smaller
+				newHzoom = 1.0f;  newVzoom = 1.0f;
+				break;
+			case 2: // Tiny
+				newHzoom = 0.75f;  newVzoom = 0.75f;
+				break;
+			}
+			terminal.resize( newLines, newCols );
+			crt.setZoom( newHzoom, newVzoom );
+			float newWidth, newHeight;
+			newWidth = newCols * BDFfont.CHAR_PIXEL_WIDTH * newHzoom;
+			newHeight = (newLines + 1) * BDFfont.CHAR_PIXEL_HEIGHT * newVzoom;
+	        crt.setPreferredSize( new Dimension( (int) Math.ceil( newWidth ), (int) Math.ceil(  newHeight ) ) );
+	        window.pack();
+		}
 	}
 	
   	public void getSerialPort() {
@@ -190,6 +234,8 @@ public class DasherJ extends JPanel {
         
         final JMenu emulMenu = new JMenu( "Emulation" );
         final ButtonGroup emulGroup = new ButtonGroup();
+        
+        final JMenuItem resizeMenuItem = new JMenuItem( "Resize" );
                
         final JMenuItem selfTestMenuItem = new JMenuItem( "Self-Test" );
         
@@ -349,6 +395,18 @@ public class DasherJ extends JPanel {
         		firstEmul = false;
         	}
         }
+        
+        emulMenu.addSeparator();
+        
+        emulMenu.add( resizeMenuItem );
+        resizeMenuItem.addActionListener( new ActionListener() {
+			@Override
+			public void actionPerformed( ActionEvent ae ) {
+				getNewSize();
+				
+			}
+       	
+        });
         
         emulMenu.addSeparator();
         

@@ -5,6 +5,7 @@ package components;
  * 
  * @author steve
  *
+ * v. 0.8 - Add visible-lines/cols properties
  * v. 0.7 - Add blinkCountdown
  *
  */
@@ -42,7 +43,9 @@ public class Status {
 		logging = false;
 		connection = ConnectionType.DISCONNECTED;
 		emulation = EmulationType.D200;
-		dirty = false;
+		visLines = Terminal.DEFAULT_LINES;
+		visCols = Terminal.DEFAULT_COLS;
+		dirty = true;
 		blinkCountdown = 10;
 	}
 

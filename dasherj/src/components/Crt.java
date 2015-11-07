@@ -1,7 +1,6 @@
 package components;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
@@ -16,6 +15,7 @@ import javax.swing.JComponent;
  * All painting to the main screen area happens here.
  * 
  * @author steve
+ * v. 0.8   Add setZoom method to support resizing
  * v. 0.7   Restore default scaling appearance (all chars double-height)
  * 			Small tidy-ups
  * v. 0.6   Rename screen to terminal
@@ -33,6 +33,8 @@ public class Crt extends JComponent implements Printable {
 	private static final int MIN_VISIBLE = 32, MAX_VISIBLE = 128;
 	private static final int PTS_PER_INCH = 72;
 	private static final float PRINT_SCALE_FACTOR = 2.0f;
+	public static final float DEFAULT_HORIZ_ZOOM = 1.0f;
+	public static final float DEFAULT_VERT_ZOOM = 2.0f;
 	
 	private int charWidth = BDFfont.CHAR_PIXEL_WIDTH; 
 	private int charHeight = BDFfont.CHAR_PIXEL_HEIGHT; 
@@ -50,7 +52,7 @@ public class Crt extends JComponent implements Printable {
 //		super();
 		
     	scaleTransform = new AffineTransform();
-    	scaleTransform.scale( 1.0, 2.0 );
+    	scaleTransform.scale( DEFAULT_HORIZ_ZOOM, DEFAULT_VERT_ZOOM );
 		
 		this.terminal = terminal;
 		this.setOpaque( true );
@@ -66,18 +68,11 @@ public class Crt extends JComponent implements Printable {
 				
 		this.setFocusable( true );
 	}
-
-	/** setCharSize set the size of the CRT widget in terms of character cells/
-	 * Used by DasherJ.
-	 * 
-	 * @param y
-	 * @param x
-	 */
-	public void setCharSize( int y, int x ) {
-
-		setPreferredSize( new Dimension( x * charWidth, (y+1) * charHeight * 2) );
-	}
 	
+	public void setZoom( float xZoom, float yZoom ) {
+		scaleTransform.setToIdentity();
+		scaleTransform.scale( xZoom, yZoom );
+	}
 	
 	/***
 	 * Paint the Crt

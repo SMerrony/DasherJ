@@ -1,6 +1,7 @@
 /* The status bar updates itself independently based on the state of the Status object,
  * there is no need to update it explicitly from anywhere else.
  * 
+ * v.0.8 - Add lines/cols to emulation status
  * v.0.5 - Add logging status, add "Serial/Telnet" to connection indicator
  */
 
@@ -80,7 +81,7 @@ public class DasherStatusBar extends JPanel {
 			loggingStatus.setText( "" );
 		}
 		
-		emulation.setText( status.emulation.toString() );
+		emulation.setText( status.emulation.toString() + " (" + status.visLines + "x" + status.visCols +")" );
 
 	}
 	

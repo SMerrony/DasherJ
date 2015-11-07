@@ -10,6 +10,7 @@ import java.util.concurrent.BlockingQueue;
  * 
  * @author steve
  * 
+ * v.0.8 -  Add resize method
  * v.0.6 -  Extend self-test to behave like DasherQ
  * 			Introduce DEFAULT_COLS/LINES, MAX_VISIBLE_COLS/LINES, TOTAL_COLS/LINES & visible_cols/lines
  * v.0.5 -  Add status.dirty = true to events where cursor is moved to improve responsiveness
@@ -85,8 +86,8 @@ public class Terminal implements Runnable {
 
 		status    = pStatus;
 		
-		visible_lines = DEFAULT_LINES;
-		visible_cols  = DEFAULT_COLS;
+		visible_lines = status.visLines;
+		visible_cols  = status.visCols;
 		fromHostQ = pFromHostQ;
 		fromKbdQ  = pFromKbdQ;
 		logQ      = pLogQ;
@@ -115,6 +116,30 @@ public class Terminal implements Runnable {
 		display[12][40].charValue = 'K';
 	}
 
+	void resize( int lines, int cols ) {
+		
+		clearScreen();
+
+		cursorX = 0;
+		cursorY = 0;
+		roll_enabled = true;
+		blinking_enabled = true;
+		protection_enabled = false;
+		inCommand = false; inExtendedCommand = false;
+		inTelnetCommand = false; gotTelnetDo = false; gotTelnetWill = false;
+		readingWindowAddressX = false;
+		readingWindowAddressY = false;
+		blinking = false;
+		dimmed = false;
+		reversedVideo = false;
+		underscored = false;
+			
+		visible_lines = lines;
+		visible_cols  = cols;
+		status.visCols = cols;
+		status.visLines = lines;
+	}
+	
 	void clearLine( int line ) {
 		for (int cc = 0; cc < visible_cols; cc++) {
 			display[line][cc].clearToSpace();
