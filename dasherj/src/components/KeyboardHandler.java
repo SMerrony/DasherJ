@@ -13,6 +13,7 @@ import java.util.concurrent.BlockingQueue;
  * 
  * @author steve
  * 
+ * v. 0.9 -  Map PC Alt-Gr to DASHER CMD
  * v. 0.7 -  Handle real function keys
  * v. 0.6 -  Fix sending of NewLines to be DASHER-compliant (and not doubled-up!)
  * 
@@ -147,6 +148,8 @@ public class KeyboardHandler implements KeyEventDispatcher {
 				}
 			}
 			break;	
+		case KeyEvent.VK_ALT_GRAPH: // We are mapping Alt Gr to DASHER CMD
+			lFromKbdQ.offer( (byte) 30 );
 		case KeyEvent.VK_F16: // Dummy value for Break button
 			lFromKbdQ.offer( (byte) 2 ); // special CMD_BREAK indicator
 			break;			
