@@ -3,7 +3,7 @@ DG DASHER Terminal Emulator (Java version, see also https://github.com/SMerrony/
 
 DasherJ is a free terminal emulator for the Data General DASHER-series terminals.  It is written in Java/Swing and should
 build and run on all desktop platforms supported by that combination.  As of v0.8 DasherJ and DasherQ are close to being
-functionally equivalent.
+functionally equivalent.  Version 0.9 should see a move from Swing to JavaFX and full functional equivalence between the two programs.
 
 ## Key Features
 
