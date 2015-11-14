@@ -1,7 +1,9 @@
 package components;
 
-import java.awt.Toolkit;
 import java.util.concurrent.BlockingQueue;
+import sun.audio.AudioPlayer;
+
+import javafx.scene.media.AudioClip;
 
 /***
  * Abstraction of what is currently displayed on the terminal
@@ -10,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
  * 
  * @author steve
  * 
+ * v.0.9 -  Change to JavaFX AudioClip player for beep sound
  * v.0.8 -  Add resize method
  * v.0.6 -  Extend self-test to behave like DasherQ
  * 			Introduce DEFAULT_COLS/LINES, MAX_VISIBLE_COLS/LINES, TOTAL_COLS/LINES & visible_cols/lines
@@ -77,6 +80,8 @@ public class Terminal implements Runnable {
 
 	private BlockingQueue<Byte> fromHostQ, fromKbdQ, logQ;
 
+	private static AudioClip BEEP_AUDIOCLIP; 
+	
 	private boolean inCommand, inExtendedCommand, readingWindowAddressX, readingWindowAddressY, blinking, dimmed, reversedVideo, underscored, protectd,
 	inTelnetCommand, gotTelnetDo, gotTelnetWill;
 	private int newXaddress, newYaddress;
@@ -91,6 +96,8 @@ public class Terminal implements Runnable {
 		fromHostQ = pFromHostQ;
 		fromKbdQ  = pFromKbdQ;
 		logQ      = pLogQ;
+		
+		BEEP_AUDIOCLIP = new AudioClip( AudioPlayer.class.getResource( "/resources/ShortBeep.wav" ).toString());
 
 		cursorX = 0;
 		cursorY = 0;
@@ -551,9 +558,8 @@ public class Terminal implements Runnable {
 					skipChar = true;
 					break;
 				case BELL:
-					//System.out.print( '\07' );
-					//System.out.flush();
-					Toolkit.getDefaultToolkit().beep();
+					// Toolkit.getDefaultToolkit().beep();
+					BEEP_AUDIOCLIP.play();
 					skipChar = true;
 					break;
 				case BLINK_DISABLE:
