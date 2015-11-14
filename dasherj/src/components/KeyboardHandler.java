@@ -1,10 +1,10 @@
 package components;
 
-import java.awt.KeyEventDispatcher;
-import java.awt.event.KeyEvent;
-import java.awt.print.PrinterException;
-import java.awt.print.PrinterJob;
 import java.util.concurrent.BlockingQueue;
+import javafx.event.EventHandler;
+import javafx.print.PrinterJob;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
 /***
  * This class takes keyboard input from the user, does any special handling required
@@ -19,211 +19,204 @@ import java.util.concurrent.BlockingQueue;
  * 
  */
 
-public class KeyboardHandler implements KeyEventDispatcher {
-	
+public class KeyboardHandler implements EventHandler<KeyEvent> {
+	//public class KeyboardHandler implements KeyEventDispatcher {	
 	BlockingQueue<Byte> lFromKbdQ;
 	Status status;
 	private int modifier;
+	private boolean handled = false;
 
 	public KeyboardHandler(BlockingQueue<Byte> fromKbdQ, Status pStatus) {
 		lFromKbdQ = fromKbdQ;
 		status = pStatus;
 		modifier = 0;
 	}
-	
+
 	@Override
-	public boolean dispatchKeyEvent( KeyEvent kev ) {
+	public void handle( KeyEvent kev ) {
 	
-		switch (kev.getID() ) {
-		case KeyEvent.KEY_PRESSED:
+		System.out.println( "Debug - KeyboardHandler triggered" );
+		if (kev.getEventType() == KeyEvent.KEY_PRESSED) 
 			keyPressed( kev );
-			break;
-		case KeyEvent.KEY_RELEASED:
+		else if (kev.getEventType() == KeyEvent.KEY_RELEASED) 
 			keyReleased( kev );
-			break;
-		case KeyEvent.KEY_TYPED:
-			// we are using KEY_RELEASED in all normal cases
-			break;
-		default:
-			System.out.printf( "KeyboardHandler: Warning - Unknown Key Event Type\n" );
-			break;
-		}
+		else if (kev.getEventType() == KeyEvent.KEY_TYPED) 
+			keyTyped( kev );
 		
-		
-		return true;  // no further action required
+		kev.consume();
+		// return true;  // no further action required
 	}
 	
 	private void keyPressed( KeyEvent kEv ) { 
-		int kc = kEv.getKeyCode();
-		switch( kc ) {
-		// need modifiers for F-key buttons and cursor keys
-		case KeyEvent.VK_CONTROL:
+		
+		if (kEv.isControlDown())
 			status.control_pressed = true;
-			break;
-		case KeyEvent.VK_SHIFT:
+		else if (kEv.isShiftDown())
 			status.shift_pressed = true;
-			break;
-		}
+		
 		if (status.control_pressed && status.shift_pressed) { modifier = -80; }  // Ctrl-Shift
 		if (status.control_pressed && !status.shift_pressed) { modifier = -64; } // Ctrl
 		if (!status.control_pressed && status.shift_pressed) { modifier = -16; } // Shift
 	}
 
-	private void keyReleased(KeyEvent arg0) {
+	private void keyReleased(KeyEvent ke) {
 
-		int kc = arg0.getKeyCode();
+		KeyCode kc = ke.getCode();
+		handled = true;
 		
 		switch( kc ) {
-		/*case KeyEvent.VK_ESCAPE:
+		/*case ESCAPE:
 			lFromKbdQ.offer( (byte) 30 );
 			break;*/
 		// cursor keys
-		case KeyEvent.VK_DOWN:
+		case DOWN:
 			if (status.shift_pressed) {
 				lFromKbdQ.offer( (byte) 30 );
 			}
 			lFromKbdQ.offer( (byte) 26 );
 			break;
-		case KeyEvent.VK_END:
+		case END:
 			lFromKbdQ.offer( (byte) 30 );	// Shift C3 on Dasher
 			lFromKbdQ.offer( (byte) 90 );
 			break;
-		case KeyEvent.VK_HOME:
+		case HOME:
 			lFromKbdQ.offer( (byte) 30 );	// Shift C1 on Dasher
 			lFromKbdQ.offer( (byte) 88 );
 			break;
-		case KeyEvent.VK_LEFT:
+		case LEFT:
 			if (status.shift_pressed) {
 				lFromKbdQ.offer( (byte) 30 );
 			}
 			lFromKbdQ.offer( (byte) 25 );
 			break;
-		case KeyEvent.VK_PAGE_DOWN:
+		case PAGE_DOWN:
 			lFromKbdQ.offer( (byte) 30 );	// Shift C4 on Dasher
 			lFromKbdQ.offer( (byte) 91 );
 			break;
-		case KeyEvent.VK_PAGE_UP:
+		case PAGE_UP:
 			lFromKbdQ.offer( (byte) 30 );	// Shift C2 on Dasher
 			lFromKbdQ.offer( (byte) 89 );
 			break;
-		case KeyEvent.VK_RIGHT:
+		case RIGHT:
 			if (status.shift_pressed) {
 				lFromKbdQ.offer( (byte) 30 );
 			}
 			lFromKbdQ.offer( (byte) 24 );
 			break;
-		case KeyEvent.VK_UP:
+		case UP:
 			if (status.shift_pressed) {
 				lFromKbdQ.offer( (byte) 30 );
 			}
 			lFromKbdQ.offer( (byte) 23 );
 			break;
 			// modifiers
-		case KeyEvent.VK_CONTROL:
+		case CONTROL:
 			status.control_pressed = false;
 			break;
-		case KeyEvent.VK_SHIFT:
+		case SHIFT:
 			status.shift_pressed = false;
 			break;
-		case KeyEvent.VK_ENTER:
+		case ENTER:
 			lFromKbdQ.offer( (byte) 10 );
 			break;
 			
 		// Function and emulated keys...	
-		case KeyEvent.VK_CLEAR:
+		case CLEAR:
 			lFromKbdQ.offer( (byte) 12 );
 			break;
-		case KeyEvent.VK_PAUSE:  // Dasher: HOLD
+		case PAUSE:  // Dasher: HOLD
 			status.holding = !status.holding;
 			break;
-		case KeyEvent.VK_PRINTSCREEN:
-			PrinterJob printJob = PrinterJob.getPrinterJob();
-			//printJob.setPrintable( SwingUtilities.getWindowAncestor( null ));  FIXME !!!
-			boolean ok = printJob.printDialog();
-			if (ok) {
-				try {
-					printJob.print();
-				} catch (PrinterException pe) {
-					pe.printStackTrace();
-				}
+		case PRINTSCREEN:
+			PrinterJob printJob = PrinterJob.createPrinterJob();
+			if (printJob != null) {
+				//printJob.printPage( );
 			}
 			break;	
-		case KeyEvent.VK_ALT_GRAPH: // We are mapping Alt Gr to DASHER CMD
+		case ALT_GRAPH: // We are mapping Alt Gr to DASHER CMD
 			lFromKbdQ.offer( (byte) 30 );
-		case KeyEvent.VK_F16: // Dummy value for Break button
+		case F16: // Dummy value for Break button
 			lFromKbdQ.offer( (byte) 2 ); // special CMD_BREAK indicator
 			break;			
-		case KeyEvent.VK_F24: // Dummy value for CR button
+		case F24: // Dummy value for CR button
 			lFromKbdQ.offer( (byte) 13 );
 			break;
-		case KeyEvent.VK_F23: // Dummy value for Er EOL button
+		case F23: // Dummy value for Er EOL button
 			lFromKbdQ.offer( (byte) 11 );
 			break;
-		case KeyEvent.VK_F1:
+		case F1:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (113 + modifier) );
 			break;
-		case KeyEvent.VK_F2:
+		case F2:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (114 + modifier) );
 			break;
-		case KeyEvent.VK_F3:
+		case F3:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (115 + modifier) );
 			break;
-		case KeyEvent.VK_F4:
+		case F4:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (116 + modifier) );
 			break;
-		case KeyEvent.VK_F5:
+		case F5:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (117 + modifier) );
 			break;
-		case KeyEvent.VK_F6:
+		case F6:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (118 + modifier) );
 			break;
-		case KeyEvent.VK_F7:
+		case F7:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (119 + modifier) );
 			break;
-		case KeyEvent.VK_F8:
+		case F8:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (120 + modifier) );
 			break;
-		case KeyEvent.VK_F9:
+		case F9:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (121 + modifier) );
 			break;
-		case KeyEvent.VK_F10:
+		case F10:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (122 + modifier) );
 			break;
-		case KeyEvent.VK_F11:
+		case F11:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (123 + modifier) );
 			break;
-		case KeyEvent.VK_F12:
+		case F12:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (124 + modifier) );
 			break;
-		case KeyEvent.VK_F13:
+		case F13:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (125 + modifier) );
 			break;
-		case KeyEvent.VK_F14:
+		case F14:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (126 + modifier) );
 			break;
-		case KeyEvent.VK_F15:
+		case F15:
 			lFromKbdQ.offer( (byte) 30 );
 			lFromKbdQ.offer( (byte) (112 + modifier) );
 			break;
 			
 		default:
-			lFromKbdQ.offer( (byte) arg0.getKeyChar() );
+			handled = false;
 			break;
 		}
+
+	}
+	
+	private void keyTyped(KeyEvent ke) {
+		if (!handled){
+			lFromKbdQ.offer( (byte) ke.getCharacter().charAt( 0 ) );
+		}
+		handled = false;
 	}
 
 }

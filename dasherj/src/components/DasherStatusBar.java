@@ -7,50 +7,40 @@
 
 package components;
 
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.Timer;
-import javax.swing.border.EtchedBorder;
-
-public class DasherStatusBar extends JPanel {
+public class DasherStatusBar extends HBox {
 	
-	private final JLabel onlineStatus = new JLabel();
-	private final JLabel loggingStatus = new JLabel();
-	private final JLabel connection = new JLabel();
-	private final JLabel emulation = new JLabel();
+	private final Label onlineStatus = new Label();
+	private final Label loggingStatus = new Label();
+	private final Label connection = new Label();
+	private final Label emulation = new Label();
 	
-	private static final int STATUS_REFRESH_MS = 500;
+	private final String etchedStyle = "-fx-border-insets: 0; " +
+									   "-fx-border-width: 2px; " +
+									   "-fx-border-color: black lightgray lightgray black;";
+	
+	public static final int STATUS_REFRESH_MS = 500;
 	
 	private Status status;
 	
 	public DasherStatusBar( Status pStatus ) {
-		super();
 		
 		status = pStatus;
 		
 		//Container c = super.getContentPane();
-		setLayout( new GridLayout( 1, 4 ) );
-		
-		onlineStatus.setBorder( new EtchedBorder() );
-		loggingStatus.setBorder( new EtchedBorder() );
-		connection.setBorder( new EtchedBorder() );
-		emulation.setBorder( new EtchedBorder() );
-		add( onlineStatus );
-		add( loggingStatus );
-		add( connection );
-		add( emulation );
-		
-		// Update independently
-		Timer updateStatusBarTimer = new Timer( STATUS_REFRESH_MS, new ActionListener() {
-			public void actionPerformed( ActionEvent ae ) {
-				updateStatus();
-			}
-		});
-		updateStatusBarTimer.start();
+		// setLayout( new GridLayout( 1, 4 ) );
+
+		onlineStatus.setStyle( etchedStyle );
+		loggingStatus.setStyle( etchedStyle );
+		loggingStatus.setMinWidth( 80.0 );
+		connection.setStyle( etchedStyle );
+		connection.setMaxWidth( Double.MAX_VALUE );
+		HBox.setHgrow( connection, Priority.ALWAYS );
+		emulation.setStyle( etchedStyle );
+		getChildren().addAll( onlineStatus, loggingStatus, connection, emulation );
 		
 	}
 	
@@ -59,7 +49,7 @@ public class DasherStatusBar extends JPanel {
 		switch (status.connection) {
 		case DISCONNECTED:
 			onlineStatus.setText( "Offline" );
-			connection.setText( "" );
+			connection.setText( " " );
 			break;
 		case SERIAL_CONNECTED:
 			onlineStatus.setText( "Online (Serial)" );
@@ -78,7 +68,7 @@ public class DasherStatusBar extends JPanel {
 		if (status.logging){
 			loggingStatus.setText( "Logging" );
 		} else {
-			loggingStatus.setText( "" );
+			loggingStatus.setText( " " );
 		}
 		
 		emulation.setText( status.emulation.toString() + " (" + status.visLines + "x" + status.visCols +")" );
