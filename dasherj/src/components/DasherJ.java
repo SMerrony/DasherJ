@@ -85,6 +85,7 @@ public class DasherJ extends Application {
 	static Status status;
 	Clipboard clipboard;
 	//KeyboardFocusManager keyFocusManager;
+	FKeyHandler fKeyHandler;
 	KeyboardHandler keyHandler;
 	static FKeyGrid fkeyGrid;
 	static DasherStatusBar statusBar;
@@ -147,8 +148,11 @@ public class DasherJ extends Application {
 		//vboxPane.setMinWidth( terminal.visible_cols * BDFfont.CHAR_PIXEL_WIDTH * Crt.DEFAULT_HORIZ_ZOOM );
 		vboxPane.getChildren().add( menuBar );
 		
-		fkeyGrid = new FKeyGrid( status, mainStage );
+		fKeyHandler = new FKeyHandler( fromKbdQ, status );		
+		fkeyGrid = new FKeyGrid( status, fKeyHandler, mainStage, scene );
 		vboxPane.getChildren().add( fkeyGrid.grid );
+
+		//scene.addEventHandler( ActionEvent.ANY, fKeyHandler );
         
         crt = new Crt( terminal );
         crt.canvas.setWidth( terminal.visible_cols * BDFfont.CHAR_PIXEL_WIDTH * Crt.DEFAULT_HORIZ_ZOOM );

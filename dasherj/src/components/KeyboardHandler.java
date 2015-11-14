@@ -20,12 +20,11 @@ import javafx.scene.input.KeyEvent;
  */
 
 public class KeyboardHandler implements EventHandler<KeyEvent> {
-	//public class KeyboardHandler implements KeyEventDispatcher {	
+
 	BlockingQueue<Byte> lFromKbdQ;
 	Status status;
 	private int modifier;
-	private boolean handled = false;
-
+	
 	public KeyboardHandler(BlockingQueue<Byte> fromKbdQ, Status pStatus) {
 		lFromKbdQ = fromKbdQ;
 		status = pStatus;
@@ -35,7 +34,7 @@ public class KeyboardHandler implements EventHandler<KeyEvent> {
 	@Override
 	public void handle( KeyEvent kev ) {
 	
-		System.out.println( "Debug - KeyboardHandler triggered" );
+		// System.out.println( "Debug - KeyboardHandler triggered" );
 		if (kev.getEventType() == KeyEvent.KEY_PRESSED) 
 			keyPressed( kev );
 		else if (kev.getEventType() == KeyEvent.KEY_RELEASED) 
@@ -62,8 +61,6 @@ public class KeyboardHandler implements EventHandler<KeyEvent> {
 	private void keyReleased(KeyEvent ke) {
 
 		KeyCode kc = ke.getCode();
-		handled = true;
-		
 		switch( kc ) {
 		/*case ESCAPE:
 			lFromKbdQ.offer( (byte) 30 );
@@ -206,17 +203,13 @@ public class KeyboardHandler implements EventHandler<KeyEvent> {
 			break;
 			
 		default:
-			handled = false;
 			break;
 		}
 
 	}
 	
 	private void keyTyped(KeyEvent ke) {
-		if (!handled){
-			lFromKbdQ.offer( (byte) ke.getCharacter().charAt( 0 ) );
-		}
-		handled = false;
+		lFromKbdQ.offer( (byte) ke.getCharacter().charAt( 0 ) );
 	}
 
 }

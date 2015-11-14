@@ -78,7 +78,7 @@ public class Crt extends Canvas {
 	 */
 	public void paintCrt() {
     	
-    	System.out.println( "Debug - paintCrt invoked" );
+ //   	System.out.println( "Debug - paintCrt invoked" );
     	   	
     	GraphicsContext g = canvas.getGraphicsContext2D();
     	

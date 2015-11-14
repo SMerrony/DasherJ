@@ -7,10 +7,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.Mnemonic;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
@@ -34,22 +40,28 @@ public class FKeyGrid extends GridPane  {
 	String fKeyStrings[][];
 	Label fKeyLabels[][], templateLabel1, templateLabel2;
 	String templateTitle;
+	FKeyHandler handler;
 	
 	Status status;
 	Stage mStage;
+	Scene scene;
 	
 	private final double MIN_BTN_WIDTH = 40.0;
-	private final double MIN_BTN_HEIGHT = 30.0;
+	private final double MIN_BTN_HEIGHT = 20.0;
+	private final double MIN_LABEL_HEIGHT = 30.0;
 	
-	public FKeyGrid( Status pStatus, final Stage mainStage ) {
+	public FKeyGrid( Status pStatus, FKeyHandler pHandler, final Stage mainStage, final Scene pScene ) {
 		
 		status = pStatus;
 		mStage = mainStage; 
+		scene = pScene;
+		handler = pHandler;
+		Button btn;
 		
 		grid = new GridPane();
 		
-		grid.setHgap( 2.0 );
-		grid.setVgap( 2.0 );
+		grid.setHgap( 1.0 );
+		grid.setVgap( 1.0 );
 		grid.setMaxWidth( Double.MAX_VALUE );
 		GridPane.setHgrow( grid, Priority.ALWAYS );
 		
@@ -68,7 +80,8 @@ public class FKeyGrid extends GridPane  {
 		
 		grid.add( makeFKeyButton( "Brk", "Command-Break" ), 0,4 );
 		
-		grid.add( makeFKeyButton( "F1" ), 1,4 );
+		grid.add( btn = makeFKeyButton( "F1" ), 1,4 );
+		//scene.addMnemonic( new Mnemonic( btn, new KeyCodeCombination( KeyCode.F1 )) );
 		grid.add( makeFKeyButton( "F2" ), 2,4 );
 		grid.add( makeFKeyButton( "F3" ), 3,4 );
 		grid.add( makeFKeyButton( "F4" ), 4,4 );
@@ -139,8 +152,8 @@ public class FKeyGrid extends GridPane  {
 		button.setMinWidth( MIN_BTN_WIDTH );
 		button.setMinHeight( MIN_BTN_HEIGHT );
 		button.setMaxWidth( Double.MAX_VALUE );
-//		button.setActionCommand( label );   FIXME
-//		button.addActionListener( this );	
+		button.addEventHandler( ActionEvent.ANY, handler );
+
 		return button;
 	}
 	
@@ -151,85 +164,10 @@ public class FKeyGrid extends GridPane  {
 		label.setFont( Font.font( "Arial", FontWeight.NORMAL, 8 ) );
 		label.setMinWidth( MIN_BTN_WIDTH );
 		label.setMaxWidth( Double.MAX_VALUE );
-		label.setMinHeight( MIN_BTN_HEIGHT);
+		label.setMinHeight( MIN_LABEL_HEIGHT);
 		label.setStyle( "-fx-border-width: 1; -fx-border-color: DARKGRAY;" );
 		return label;
 	}
-
-//	@Override
-//	public void actionPerformed( ActionEvent ae ) {
-//		
-//		// these are for the toolbar buttons - not the real function keys
-//		String cmd = ae.getActionCommand();
-//		switch (cmd) {
-//		case "Brk":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F16, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F1":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F1, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F2":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F2, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F3":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F3, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F4":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F4, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F5":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F5, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F6":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F6, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F7":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F7, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F8":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F8, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F9":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F9, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F10":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F10, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F11":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F11, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F12":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F12, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F13":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F13, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F14":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F14, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "F15":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F15, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "Er Pg":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_CLEAR, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "CR":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F24, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "ErEOL":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F23, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		case "Loc Pr":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_PRINTSCREEN, KeyEvent.CHAR_UNDEFINED ) );
-//			break;	
-//		case "Hold":
-//			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_PAUSE, KeyEvent.CHAR_UNDEFINED ) );
-//			break;
-//		default:
-//			System.out.printf( "DasherJ - Warning: Unknown ActionEvent (%s) received.\n", cmd );
-//			break;	
-//		}
-//	}
 
 	public void loadTemplate() {
 		
