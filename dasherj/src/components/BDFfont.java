@@ -1,16 +1,21 @@
 package components;
 
 /***
+ * The custom font used by DasherJ
+ * 
+ * Default colours are picked up from the Crt object.
+ * 
+ * Version 0.9 Switch to JavaFX from Swing
  * Version 0.6 Switch to Raster for chars
  * Version 0.5 Add Constants and sync with v.0.4
  */
 
-import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 
 public final class BDFfont {
 
@@ -19,19 +24,19 @@ public final class BDFfont {
 	public static final int CHARSET_SIZE = 128; 
 
 	public int charCount;
-	public BufferedImage charImages[], charDimImages[], charReverseImages[];
+	public WritableImage charImages[], charDimImages[], charReverseImages[];
 	public boolean charLoaded[];
 	public boolean loaded;
 
 	public BDFfont() {
-		charImages        = new BufferedImage[CHARSET_SIZE];
-		charDimImages     = new BufferedImage[CHARSET_SIZE];
-		charReverseImages = new BufferedImage[CHARSET_SIZE];
+		charImages        = new WritableImage[CHARSET_SIZE];
+		charDimImages     = new WritableImage[CHARSET_SIZE];
+		charReverseImages = new WritableImage[CHARSET_SIZE];
 		charLoaded        = new boolean[CHARSET_SIZE];	
 		for (int i = 0; i < CHARSET_SIZE; i++) {
-			charImages[i]        = new BufferedImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
-			charDimImages[i]     = new BufferedImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT, BufferedImage.TYPE_BYTE_GRAY );
-			charReverseImages[i] = new BufferedImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT, BufferedImage.TYPE_BYTE_GRAY );
+			charImages[i]        = new WritableImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT );
+			charDimImages[i]     = new WritableImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT );
+			charReverseImages[i] = new WritableImage( CHAR_PIXEL_WIDTH, CHAR_PIXEL_HEIGHT );
 		}
 		loaded = false;
 	}
@@ -40,7 +45,7 @@ public final class BDFfont {
 
 		BufferedReader bfr;
 		bfr = new BufferedReader(  new InputStreamReader( fontFileStream )  );
-		WritableRaster raster, dimRaster, reverseRaster;
+		PixelWriter plainWriter, dimWriter, reverseWriter;
 
 		try {
 			while (!(bfr.readLine()).equals( "ENDPROPERTIES" )); // skip over header
@@ -71,13 +76,13 @@ public final class BDFfont {
 				// skip the BITMAP line
 				bfr.readLine();
 				
-				raster = charImages[asciiCode].getRaster();
-				dimRaster = charDimImages[asciiCode].getRaster();
-				reverseRaster = charReverseImages[asciiCode].getRaster();
+				plainWriter = charImages[asciiCode].getPixelWriter();
+				dimWriter = charDimImages[asciiCode].getPixelWriter();
+				reverseWriter = charReverseImages[asciiCode].getPixelWriter();
 				// fill the reverse raster with whiteness
 				for (int x = 0; x < CHAR_PIXEL_WIDTH; x++)
 					for (int y = 0; y < CHAR_PIXEL_HEIGHT; y++)
-						reverseRaster.setSample( x, y, 0, 255 ); 
+						reverseWriter.setColor(x, y, Crt.DFLT_FG_COLOR );
 				
 				// load the actual bitmap for this char a row at a time from the top down
 				for (int bitMapLine = pixHeight - 1; bitMapLine >= 0; bitMapLine--) {
@@ -86,9 +91,9 @@ public final class BDFfont {
 					for (int i=0; i < pixWidth; i++) {
 						boolean pix = ((lineByte & 0x80) >> 7) == 1; // test the MSB
 						int thisYoffset = CHAR_PIXEL_HEIGHT - (1 + bitMapLine + yOffset);
-						raster.setSample( xOffset + i, thisYoffset, 0, pix ? 255 : 0 );
-						reverseRaster.setSample( xOffset + i, thisYoffset, 0, pix ? 0 : 255 );
-						dimRaster.setSample( xOffset + i, thisYoffset, 0, pix ? 127 : 0 );
+						plainWriter.setColor( xOffset + i, thisYoffset, pix ? Crt.DFLT_FG_COLOR : Crt.DFLT_BG_COLOR );
+						reverseWriter.setColor( xOffset + i, thisYoffset, pix ? Crt.DFLT_BG_COLOR : Crt.DFLT_FG_COLOR );
+						dimWriter.setColor( xOffset + i, thisYoffset, pix ? Crt.DFLT_DIM_COLOR : Crt.DFLT_BG_COLOR );
 						lineByte = (byte) (lineByte << 1);
 					}
 				}

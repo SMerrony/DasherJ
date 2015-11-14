@@ -188,7 +188,7 @@ public class Terminal implements Runnable {
 
 	void selfTest( BlockingQueue<Byte> fromKbdQ ) {
 
-		byte[] testlineHRule1 = "12345678901234567890123456789012345678901234567890123456789012345678901234567890".getBytes();
+		byte[] testlineHRule1 = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890".getBytes();
 		byte[] testlineHRule2 = "         1         2         3         4         5         6         7         8".getBytes();
 		byte[] testline1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567489!\"$%.".getBytes();
 		byte[] testlineN = "3 Normal  : ".getBytes();
@@ -200,7 +200,8 @@ public class Terminal implements Runnable {
 
 		fromKbdQ.offer( ERASE_WINDOW );
 
-		for (c = 0; c < testlineHRule1.length; c++) {
+//		for (c = 0; c < testlineHRule1.length; c++) {
+		for (c = 0; c < visible_cols; c++) {
 			fromKbdQ.offer( testlineHRule1[c] );
 		}
 		fromKbdQ.offer( NL );

@@ -1,13 +1,5 @@
 package components;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,259 +7,176 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JToolBar;
-import javax.swing.SwingConstants;
-import javax.swing.filechooser.FileNameExtensionFilter;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.Mnemonic;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
 /**
  * FKeyGrid - this class represents the function keys and the grid of associated customisable labels
  * 
  * @author steve
  * 
+ * v. 0.9  - Move to JavaFX from Swing
  * v. 0.7  - Initial implementation based on v. 0.9 of DasherQ
  *
  */
-public class FKeyGrid extends JToolBar implements ActionListener {
+public class FKeyGrid extends GridPane  {
 	
-	GridBagLayout grid;
-	GridBagConstraints cons;
+	GridPane grid;
 	String fKeyStrings[][];
-	JLabel fKeyLabels[][], templateLabel1, templateLabel2;
+	Label fKeyLabels[][], templateLabel1, templateLabel2;
 	String templateTitle;
+	FKeyHandler handler;
 	
 	Status status;
+	Stage mStage;
+	Scene scene;
 	
-	public FKeyGrid( Status pStatus ) {
+	private final double MIN_BTN_WIDTH = 40.0;
+	private final double MIN_BTN_HEIGHT = 20.0;
+	private final double MIN_LABEL_HEIGHT = 30.0;
+	
+	public FKeyGrid( Status pStatus, FKeyHandler pHandler, final Stage mainStage, final Scene pScene ) {
 		
 		status = pStatus;
+		mStage = mainStage; 
+		scene = pScene;
+		handler = pHandler;
+		Button btn;
 		
-		grid = new GridBagLayout();
-		cons = new GridBagConstraints();
-		setLayout( grid );
+		grid = new GridPane();
 		
-		cons.weightx = 1;
-		cons.fill = GridBagConstraints.BOTH;
-		cons.insets = new Insets( 1,1,1,1);
+		grid.setHgap( 1.0 );
+		grid.setVgap( 1.0 );
+		grid.setMaxWidth( Double.MAX_VALUE );
+		GridPane.setHgrow( grid, Priority.ALWAYS );
 		
-		templateLabel1 = new JLabel("", SwingConstants.CENTER );
-		templateLabel1.setFont( new Font( "Arial", Font.PLAIN, 9 ) );
-		templateLabel1.setBackground( Color.LIGHT_GRAY );
-		templateLabel1.setOpaque( true );
-		templateLabel2 = new JLabel("", SwingConstants.CENTER );
-		templateLabel2.setFont( new Font( "Arial", Font.PLAIN, 9 ) );
-		templateLabel2.setBackground( Color.LIGHT_GRAY );
-		templateLabel2.setOpaque( true );	
+		templateLabel1 = new Label("");
+		templateLabel1.setFont( Font.font( "Arial", FontWeight.BOLD, 9 ) );
+		templateLabel1.setStyle( "-fx-background-color: lightgray;" );
+		templateLabel1.setAlignment( Pos.CENTER );
+		templateLabel1.setTextAlignment( TextAlignment.CENTER );
+		//templateLabel1.setOpaque( true );
+		templateLabel2 = new Label("");
+		templateLabel2.setFont( Font.font( "Arial", FontWeight.BOLD, 9 ) );
+		templateLabel2.setStyle( "-fx-background-color: lightgray;" );
+		//templateLabel2.setOpaque( true );	
 		
-		cons.gridx = 0; cons.gridy = 0;
-		add( makeFKeyButton( "Loc Pr", "Local Print" ), cons );
+		grid.add( makeFKeyButton( "Loc Pr", "Local Print" ), 0, 0 );
 		
-		cons.gridx = 0; cons.gridy = 4;
-		add( makeFKeyButton( "Brk", "Command-Break" ), cons );
+		grid.add( makeFKeyButton( "Brk", "Command-Break" ), 0,4 );
 		
-		cons.gridx = 1; cons.gridy = 4;
-		add( makeFKeyButton( "F1" ), cons );
-		cons.gridx = 2; cons.gridy = 4;
-		add( makeFKeyButton( "F2" ), cons );
-		cons.gridx = 3; cons.gridy = 4;
-		add( makeFKeyButton( "F3" ), cons );
-		cons.gridx = 4; cons.gridy = 4;
-		add( makeFKeyButton( "F4" ), cons );
-		cons.gridx = 5; cons.gridy = 4;
-		add( makeFKeyButton( "F5" ), cons );
+		grid.add( btn = makeFKeyButton( "F1" ), 1,4 );
+		//scene.addMnemonic( new Mnemonic( btn, new KeyCodeCombination( KeyCode.F1 )) );
+		grid.add( makeFKeyButton( "F2" ), 2,4 );
+		grid.add( makeFKeyButton( "F3" ), 3,4 );
+		grid.add( makeFKeyButton( "F4" ), 4,4 );
+		grid.add( makeFKeyButton( "F5" ), 5,4 );
 		
-		cons.gridx = 6; cons.gridy = 0;
-		add( makeFKeyLabel( "<html>Ctrl-<br>Shift</html>" ), cons );
-		cons.gridx = 6; cons.gridy = 1;
-		add( makeFKeyLabel( "Ctrl" ), cons );
-		cons.gridx = 6; cons.gridy = 2;
-		add( makeFKeyLabel( "Shift" ), cons );
+		grid.add( makeFKeyLabel( "Ctrl-Shift" ), 6,0 );
+		grid.add( makeFKeyLabel( "Ctrl" ), 6,1 );
+		grid.add( makeFKeyLabel( "Shift" ), 6,2 );
 		
-		cons.gridx = 6; cons.gridy = 4;
-		add( templateLabel1, cons );
+		grid.add( templateLabel1, 6,4 );
 		
-		cons.gridx = 7; cons.gridy = 4;
-		add( makeFKeyButton( "F6" ), cons );
-		cons.gridx = 8; cons.gridy = 4;
-		add( makeFKeyButton( "F7" ), cons );
-		cons.gridx = 9; cons.gridy = 4;
-		add( makeFKeyButton( "F8" ), cons );
-		cons.gridx = 10; cons.gridy = 4;
-		add( makeFKeyButton( "F9" ), cons );
-		cons.gridx = 11; cons.gridy = 4;
-		add( makeFKeyButton( "F10" ), cons );
+		grid.add( makeFKeyButton( "F6" ), 7,4 );
+		grid.add( makeFKeyButton( "F7" ), 8,4 );
+		grid.add( makeFKeyButton( "F8" ), 9,4 );
+		grid.add( makeFKeyButton( "F9" ), 10,4 );
+		grid.add( makeFKeyButton( "F10" ), 11,4 );
 		
-		cons.gridx = 12; cons.gridy = 0;
-		add( makeFKeyLabel( "<html>Ctrl-<br>Shift</html>" ), cons );
-		cons.gridx = 12; cons.gridy = 1;
-		add( makeFKeyLabel( "Ctrl" ), cons );
-		cons.gridx = 12; cons.gridy = 2;
-		add( makeFKeyLabel( "Shift" ), cons );
+		grid.add( makeFKeyLabel( "Ctrl-Shift" ), 12,0 );
+		grid.add( makeFKeyLabel( "Ctrl" ), 12,1 );
+		grid.add( makeFKeyLabel( "Shift" ), 12,2 );
 
-		cons.gridx = 12; cons.gridy = 4;
-		add( templateLabel2, cons );
+		grid.add( templateLabel2, 12,4 );
 		
-		cons.gridx = 13; cons.gridy = 4;
-		add( makeFKeyButton( "F11" ), cons );
-		cons.gridx = 14; cons.gridy = 4;
-		add( makeFKeyButton( "F12" ), cons );
-		cons.gridx = 15; cons.gridy = 4;
-		add( makeFKeyButton( "F13" ), cons );
-		cons.gridx = 16; cons.gridy = 4;
-		add( makeFKeyButton( "F14" ), cons );
-		cons.gridx = 17; cons.gridy = 4;
-		add( makeFKeyButton( "F15" ), cons );
+		grid.add( makeFKeyButton( "F11" ), 13,4 );
+		grid.add( makeFKeyButton( "F12" ), 14,4 );
+		grid.add( makeFKeyButton( "F13" ), 15,4 );
+		grid.add( makeFKeyButton( "F14" ), 16,4 );
+		grid.add( makeFKeyButton( "F15" ), 17,4 );
 		
-		cons.gridx = 18; cons.gridy = 0;
-		add( makeFKeyButton( "Hold" ), cons );
-		cons.gridx = 18; cons.gridy = 1;
-		add( makeFKeyButton( "Er Pg", "Erase Page" ), cons );
-		cons.gridx = 18; cons.gridy = 2;
-		add( makeFKeyButton( "CR" ), cons );
-		cons.gridx = 18; cons.gridy = 3;
-		add( makeFKeyButton( "ErEOL", "Erase to EOL"), cons );
+		grid.add( makeFKeyButton( "Hold" ), 18,0 );
+		grid.add( makeFKeyButton( "Er Pg", "Erase Page" ), 18,1 );
+		grid.add( makeFKeyButton( "CR" ), 18,2 );
+		grid.add( makeFKeyButton( "ErEOL", "Erase to EOL"), 18,3 );
 		
 		// now the blank labels ready for use later
 		fKeyStrings = new String[4][15];
-		fKeyLabels = new JLabel[4][15];
+		fKeyLabels = new Label[4][15];
 
 		for (int k = 0; k < 5; k++) {
 			for (int r = 0; r < 4; r++ ) {
-				cons.gridx = k + 1; cons.gridy = r;
-				fKeyLabels[r][k] = new JLabel("", SwingConstants.CENTER );
-				fKeyLabels[r][k].setFont( new Font( "Arial", Font.PLAIN, 9 ) );
-				fKeyLabels[r][k].setBackground( Color.LIGHT_GRAY );
-				fKeyLabels[r][k].setOpaque( true );
-				add( fKeyLabels[r][k], cons );
+				fKeyLabels[r][k] = makeFKeyLabel( "" );
+				grid.add( fKeyLabels[r][k], k+1, r );
 			}
 		}	
 		for (int k = 5; k < 10; k++) {
 			for (int r = 0; r < 4; r++ ) {
-				cons.gridx = k+2; cons.gridy = r;
-				fKeyLabels[r][k] = new JLabel("", SwingConstants.CENTER );
-				fKeyLabels[r][k].setFont( new Font( "Arial", Font.PLAIN, 9 ) );
-				fKeyLabels[r][k].setBackground( Color.LIGHT_GRAY );
-				fKeyLabels[r][k].setOpaque( true );
-				add( fKeyLabels[r][k], cons );
+				fKeyLabels[r][k] = makeFKeyLabel("");
+				grid.add( fKeyLabels[r][k], k+2, r );
 			}
 		}
 		for (int k = 10; k < 15; k++) {
 			for (int r = 0; r < 4; r++ ) {
-				cons.gridx = k+3; cons.gridy = r;
-				fKeyLabels[r][k] = new JLabel("", SwingConstants.CENTER );
-				fKeyLabels[r][k].setFont( new Font( "Arial", Font.PLAIN, 9 ) );
-				fKeyLabels[r][k].setBackground( Color.LIGHT_GRAY );
-				fKeyLabels[r][k].setOpaque( true );
-				add( fKeyLabels[r][k], cons );
+				fKeyLabels[r][k] = makeFKeyLabel("");
+				grid.add( fKeyLabels[r][k], k+3, r );
 			}
 		}
 	}
 	
-	protected JButton makeFKeyButton( String label, String tooltip ) {
-		JButton button = makeFKeyButton( label );
-		button.setToolTipText( tooltip );
+	protected Button makeFKeyButton( String label, String tooltip ) {
+		Button button = makeFKeyButton( label );
+		button.setTooltip( new Tooltip( tooltip ) );
 		return button;
 	}
 
-	protected JButton makeFKeyButton( String label ) {
-		JButton button = new JButton( label );
-		button.setFont( new Font( "Arial", Font.BOLD, 9 ) );
-		button.setActionCommand( label );
-		button.addActionListener( this );	
+	protected Button makeFKeyButton( String label ) {
+		Button button = new Button( label );
+		button.setFont( Font.font( "Arial", FontWeight.BOLD, 9 ) );
+		button.setMinWidth( MIN_BTN_WIDTH );
+		button.setMinHeight( MIN_BTN_HEIGHT );
+		button.setMaxWidth( Double.MAX_VALUE );
+		button.addEventHandler( ActionEvent.ANY, handler );
+
 		return button;
 	}
 	
-	protected JLabel makeFKeyLabel( String text ) {
-		JLabel label = new JLabel( text, SwingConstants.CENTER ); 
-		label.setFont( new Font( "Arial", Font.PLAIN, 9 ) );
+	protected Label makeFKeyLabel( String text ) {
+		Label label = new Label( text ); 
+		label.setAlignment( Pos.CENTER );
+		label.setTextAlignment( TextAlignment.CENTER );
+		label.setFont( Font.font( "Arial", FontWeight.NORMAL, 8 ) );
+		label.setMinWidth( MIN_BTN_WIDTH );
+		label.setMaxWidth( Double.MAX_VALUE );
+		label.setMinHeight( MIN_LABEL_HEIGHT);
+		label.setStyle( "-fx-border-width: 1; -fx-border-color: DARKGRAY;" );
 		return label;
-	}
-
-	@Override
-	public void actionPerformed( ActionEvent ae ) {
-		
-		// these are for the toolbar buttons - not the real function keys
-		String cmd = ae.getActionCommand();
-		switch (cmd) {
-		case "Brk":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F16, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F1":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F1, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F2":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F2, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F3":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F3, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F4":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F4, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F5":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F5, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F6":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F6, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F7":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F7, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F8":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F8, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F9":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F9, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F10":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F10, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F11":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F11, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F12":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F12, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F13":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F13, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F14":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F14, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "F15":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F15, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "Er Pg":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_CLEAR, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "CR":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F24, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "ErEOL":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_F23, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		case "Loc Pr":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_PRINTSCREEN, KeyEvent.CHAR_UNDEFINED ) );
-			break;	
-		case "Hold":
-			this.dispatchEvent( new KeyEvent( this, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, KeyEvent.VK_PAUSE, KeyEvent.CHAR_UNDEFINED ) );
-			break;
-		default:
-			System.out.printf( "DasherJ - Warning: Unknown ActionEvent (%s) received.\n", cmd );
-			break;	
-		}
 	}
 
 	public void loadTemplate() {
 		
-		final JFileChooser templateFileChooser = new JFileChooser();
-		FileNameExtensionFilter filter = new FileNameExtensionFilter( "DasherQ/J Template", "txt" );
-		templateFileChooser.setFileFilter( filter );
-		int retVal = templateFileChooser.showOpenDialog( getTopLevelAncestor() );
-		if (retVal == JFileChooser.APPROVE_OPTION) {
-			File templateFile = templateFileChooser.getSelectedFile();
+		FileChooser templateFileChooser = new FileChooser();
+		templateFileChooser.setTitle( "Load Function Key Template" );
+		templateFileChooser.getExtensionFilters().addAll(
+				new FileChooser.ExtensionFilter( "DasherQ/J Template", "*.txt" ) );
+		File templateFile = templateFileChooser.showOpenDialog( mStage );
+		if (templateFile != null) {
 			try {
 				InputStream templateStream  = new FileInputStream( templateFile.getAbsolutePath() );
 				BufferedReader templateReader = new BufferedReader( new InputStreamReader( templateStream ) );
@@ -292,9 +201,7 @@ public class FKeyGrid extends JToolBar implements ActionListener {
 			        		return;
 			        	}
 			        	if (template_line.length() > 0) {
-			        		fKeyLabels[r][k].setText( "<html>" +
-			        								  template_line.replace( "\\", "<br>" ) +
-			        								  "</html>" );
+			        		fKeyLabels[r][k].setText( template_line.replace( "\\", "\n" ) );
 			        	}
 			        }
 			    }

@@ -1,12 +1,8 @@
 package components;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.geom.AffineTransform;
-import java.awt.print.PageFormat;
-import java.awt.print.Printable;
-import javax.swing.JComponent;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 
 /**
  * Crt represents the glass screen of the visual display Terminal.
@@ -15,6 +11,7 @@ import javax.swing.JComponent;
  * All painting to the main screen area happens here.
  * 
  * @author steve
+ * v. 0.9   Switch to JavaFX (from Swing)
  * v. 0.8   Add setZoom method to support resizing
  * v. 0.7   Restore default scaling appearance (all chars double-height)
  * 			Small tidy-ups
@@ -27,7 +24,7 @@ import javax.swing.JComponent;
  * 			Fix printing to scale and position reasonably
  *
  */
-public class Crt extends JComponent implements Printable {
+public class Crt extends Canvas {
 	
 	private static final String DASHER_FONT_BDF = "/resources/D410-a-12.bdf";
 	private static final int MIN_VISIBLE = 32, MAX_VISIBLE = 128;
@@ -42,22 +39,19 @@ public class Crt extends JComponent implements Printable {
 	
 	private Terminal terminal;
 	
-	private AffineTransform scaleTransform;
+	public Canvas canvas;
 	
-	Color bgColor = Color.BLACK;
-	Color fgColor = Color.WHITE;
-	Color dimColor = Color.LIGHT_GRAY;
+	public static final Color DFLT_BG_COLOR = Color.BLACK;
+	public static final Color DFLT_FG_COLOR = Color.WHITE;
+	public static final Color DFLT_DIM_COLOR = Color.DARKGREY;
+	
+	Color bgColor = DFLT_BG_COLOR;
+	Color fgColor = DFLT_FG_COLOR;
+	Color dimColor = DFLT_DIM_COLOR;
 		
 	public Crt( Terminal terminal ) {
-//		super();
-		
-    	scaleTransform = new AffineTransform();
-    	scaleTransform.scale( DEFAULT_HORIZ_ZOOM, DEFAULT_VERT_ZOOM );
 		
 		this.terminal = terminal;
-		this.setOpaque( true );
-		this.setBackground( Color.BLACK );
-		this.setForeground( Color.WHITE );
 		
 		bdfFont = new BDFfont();
 
@@ -66,12 +60,14 @@ public class Crt extends JComponent implements Printable {
 			System.exit(1);
 		}
 				
-		this.setFocusable( true );
+		canvas = new Canvas(); 
+   	
+	//this.setFocusable( true );
 	}
 	
 	public void setZoom( float xZoom, float yZoom ) {
-		scaleTransform.setToIdentity();
-		scaleTransform.scale( xZoom, yZoom );
+		//scaleTransform.setToIdentity();
+		//scaleTransform.scale( xZoom, yZoom );
 	}
 	
 	/***
@@ -80,28 +76,22 @@ public class Crt extends JComponent implements Printable {
 	 * This is called VERY often - try to be efficient...
 	 * 
 	 */
-    @Override
-	public void paintComponent( final Graphics pG ) {
+	public void paintCrt() {
     	
-    	//super.paintComponent( pG );
+ //   	System.out.println( "Debug - paintCrt invoked" );
+    	   	
+    	GraphicsContext g = canvas.getGraphicsContext2D();
     	
-    	Graphics2D g = (Graphics2D) pG;
-
-    	g.setTransform( scaleTransform );
-
-    	// super.paintComponent( g );
-
     	renderCharCells( g );
 	
     	// draw the cursor - if on-screen
     	synchronized( terminal ) { // don't want cursor being moved while we are drawing it...
     		if (terminal.cursorX < terminal.visible_cols && terminal.cursorY < terminal.visible_lines) {
-    			g.setColor( fgColor );
+    			g.setFill( fgColor );
     			g.fillRect( terminal.cursorX * charWidth, terminal.cursorY* charHeight, charWidth, charHeight );
     			if (terminal.display[terminal.cursorY][terminal.cursorX].charValue != ' ') {
-    				g.setColor( bgColor );
+    				g.setFill( bgColor );
     				g.drawImage( bdfFont.charReverseImages[(int) terminal.display[terminal.cursorY][terminal.cursorX].charValue], 
-    							 null, 
     							 terminal.cursorX * charWidth, 
     							 terminal.cursorY * charHeight );
     			}
@@ -119,7 +109,7 @@ public class Crt extends JComponent implements Printable {
      * 
      * @param g
      */
-    private void renderCharCells( Graphics2D g ) {
+    private void renderCharCells( GraphicsContext g ) {
     	
     	byte charVal;
   	
@@ -128,77 +118,82 @@ public class Crt extends JComponent implements Printable {
     			
     			// first fill the cell with the background colour and set the right foreground colour
     			if (terminal.display[y][x].reverse) {
-    				g.setColor( fgColor );
+    				g.setFill( fgColor );
     				g.fillRect( x * charWidth, y * charHeight, charWidth, charHeight );
-    				g.setColor( bgColor );
+    				g.setFill( bgColor );
+    				g.setStroke( bgColor );
     			} else {
-    				g.setColor( bgColor );
+    				g.setFill( bgColor );
     				g.fillRect( x * charWidth, y * charHeight, charWidth, charHeight );
-    				g.setColor( fgColor );
+    				g.setFill( fgColor );
+    				g.setStroke( fgColor );
     			}
     			
     			// draw the character but handle blinking
     			if (terminal.blinking_enabled && terminal.blinkState && terminal.display[y][x].blink) {
-    				g.setColor( bgColor );
+    				g.setFill( bgColor );
     	    		g.fillRect( x * charWidth, (y + 1) * charHeight, charWidth, charHeight );
     			} else {
     				charVal = terminal.display[y][x].charValue;
     				if (charVal >= MIN_VISIBLE && charVal <= MAX_VISIBLE && bdfFont.charLoaded[charVal]) {
     					if (terminal.display[y][x].reverse) {
-    						g.drawImage( bdfFont.charReverseImages[(int) charVal], null, x * charWidth, y * charHeight );
+    						g.drawImage( bdfFont.charReverseImages[(int) charVal], x * charWidth, y * charHeight );
     					} else if (terminal.display[y][x].dim) {
-    						g.drawImage( bdfFont.charDimImages[(int) charVal], null, x * charWidth, y * charHeight );
+    						g.drawImage( bdfFont.charDimImages[(int) charVal], x * charWidth, y * charHeight );
     					} else {
-    						g.drawImage( bdfFont.charImages[(int) charVal], null, x * charWidth, y * charHeight );
+    						g.drawImage( bdfFont.charImages[(int) charVal], x * charWidth, y * charHeight );
     					}
     				}
        			}
     			
     			// underscore
     			if (terminal.display[y][x].underscore) {
-    				g.drawLine( x * charWidth, (y + 1) * charHeight, (x + 1) * charWidth, (y + 1) * charHeight );
+    				g.setLineWidth( 1.0 );
+    				g.strokeLine( x * charWidth, (y + 1) * charHeight, (x + 1) * charWidth, (y + 1) * charHeight );
     			}
     		}
     	}
     }
     
-	/* We don't actually print the screen graphic here, a new graphic is drawn for printing
-     * 
-     * @see java.awt.print.Printable#print(java.awt.Graphics, java.awt.print.PageFormat, int)
-     */
-    @Override
-    public int print( final Graphics pG, final PageFormat pageFormat, final int pageIndex ) {
-    	
-    	if (pageIndex == 0) {
-    		
-    		Graphics2D g = (Graphics2D) pG;
-    		
-    		// set origin quarter-of-an-inch from page edges
-    		g.translate( (int) (pageFormat.getImageableX() + PTS_PER_INCH/4), (int) (pageFormat.getImageableY() + PTS_PER_INCH/4) );
-			AffineTransform printTransform = new AffineTransform( pageFormat.getMatrix() );
-    		printTransform.scale(  PRINT_SCALE_FACTOR, PRINT_SCALE_FACTOR );
-    		printTransform.translate( 200, 200);
-    		g.setTransform( printTransform );
-    		
-    		// save the current color scheme
-    		Color savedBgColor = bgColor, savedDimColor = dimColor, savedFgColor = fgColor;
-    		
-    		// set sensible colors for printing
-    		bgColor = Color.WHITE;
-    		dimColor = Color.GRAY;
-    		fgColor = Color.BLACK;
-    		    		
-    		renderCharCells( g );
-    		
-    		// restore colors
-    		bgColor = savedBgColor;
-    		dimColor = savedDimColor;
-    		fgColor = savedFgColor;
-    		
-    		return PAGE_EXISTS;
-    	} else {
-    		return NO_SUCH_PAGE;
-    	}
-    }
+//	/* We don't actually print the screen graphic here, a new graphic is drawn for printing
+//     * 
+//     */
+//    @Override
+//    public int print( final Graphics pG, final PageFormat pageFormat, final int pageIndex )			
+//    		throws PrinterException  {
+//    	
+//    	GraphicsContext gc = pG.
+//    	
+//    	if (pageIndex == 0) {
+//    		
+//    		// set origin quarter-of-an-inch from page edges
+//    		pG.translate( (int) (pageFormat.getImageableX() + PTS_PER_INCH/4), (int) (pageFormat.getImageableY() + PTS_PER_INCH/4) );
+//			//AffineTransform printTransform = new AffineTransform( pageFormat.getMatrix() );
+//    		printTransform.scale(  PRINT_SCALE_FACTOR, PRINT_SCALE_FACTOR );
+//    		printTransform.translate( 200, 200);
+//    		//pG.setTransform( printTransform );
+//    		
+//    		// save the current color scheme
+//    		Color savedBgColor = bgColor, savedDimColor = dimColor, savedFgColor = fgColor;
+//    		
+//    		// set sensible colors for printing
+//    		bgColor = Color.WHITE;
+//    		dimColor = Color.GRAY;
+//    		fgColor = Color.BLACK;
+//    		    		
+//    		renderCharCells( pG );
+//    		
+//    		
+//    		
+//    		// restore colors
+//    		bgColor = savedBgColor;
+//    		dimColor = savedDimColor;
+//    		fgColor = savedFgColor;
+//    		
+//    		return PAGE_EXISTS;
+//    	} else {
+//    		return NO_SUCH_PAGE;
+//    	}
+//    }
 
 }
