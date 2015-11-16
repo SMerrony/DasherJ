@@ -14,6 +14,7 @@ import javafx.scene.input.KeyEvent;
  * @author steve
  * 
  * v. 0.9 -  Map PC Alt-Gr to DASHER CMD
+ *           Refix sending of NewLines
  * v. 0.7 -  Handle real function keys
  * v. 0.6 -  Fix sending of NewLines to be DASHER-compliant (and not doubled-up!)
  * 
@@ -113,9 +114,10 @@ public class KeyboardHandler implements EventHandler<KeyEvent> {
 		case SHIFT:
 			status.shift_pressed = false;
 			break;
-		case ENTER:
-			lFromKbdQ.offer( (byte) 10 );
-			break;
+			// ENTER also results in a KeyTyped event, ignore it here
+//		case ENTER:
+//			lFromKbdQ.offer( (byte) 10 );
+//			break;
 			
 		// Function and emulated keys...	
 		case CLEAR:
@@ -209,7 +211,8 @@ public class KeyboardHandler implements EventHandler<KeyEvent> {
 	}
 	
 	private void keyTyped(KeyEvent ke) {
-		lFromKbdQ.offer( (byte) ke.getCharacter().charAt( 0 ) );
+		char c = ke.getCharacter().charAt( 0 );
+		lFromKbdQ.offer( (byte) c );
 	}
 
 }
