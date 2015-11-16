@@ -8,15 +8,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.Mnemonic;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
@@ -59,8 +56,8 @@ public class FKeyGrid extends GridPane  {
 		Button btn;
 		
 		grid = new GridPane();
-		
-		grid.setHgap( 1.0 );
+		grid.setPadding( new Insets( 2,2,2,2 ) ); // Improve the look with a small pad inside the edge
+		grid.setHgap( 1.0 ); // gap between labels/buttons
 		grid.setVgap( 1.0 );
 		grid.setMaxWidth( Double.MAX_VALUE );
 		GridPane.setHgrow( grid, Priority.ALWAYS );
