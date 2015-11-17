@@ -6,6 +6,7 @@ package components;
  * @author steve
  * 
  * v. 0.9 Try moving to JavaFX
+ *        Move default zoom factors here from Crt
  * v. 0.8 Add resizing/zooming functionality
  * v. 0.7 Eliminate separate blink timer
  * 		  Abstract toolbar (F-keys) into separate FKeyGrid class
@@ -57,11 +58,14 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.transform.Scale;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import components.Status.ConnectionType;
 
@@ -69,7 +73,11 @@ public class DasherJ extends Application {
 	
 	private static final int CRT_REFRESH_MS = 50;  // Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms
 	private static final int CRT_BLINK_COUNTER = 500 / CRT_REFRESH_MS;
-
+	public static final double DEFAULT_HORIZ_ZOOM = 1.0;
+	// For an authentic DASHER look, the characters are stretched vertically, this results
+	// in a close approximation of a physical DASHER display ratio
+	public static final double DEFAULT_VERT_ZOOM = 2.0; 
+	
 	private static final double VERSION = 0.9;
 	private static final int COPYRIGHT_YEAR = 2015;
 	private static final String RELEASE_STATUS = "Alpha";
@@ -99,10 +107,17 @@ public class DasherJ extends Application {
 	static BufferedWriter logBuffWriter;
 	
 	static Thread screenThread, localThread, loggingThread;
-	
-
+	Timeline updateCrtTimeline;
+	BorderPane borderPane;
+	Scale scale;
+	Stage mainStage;
+    double widthOverhead;
+    double heightOverhead;
+    
 	@Override
 	public void start( Stage mainStage ) throws Exception {
+			
+		this.mainStage = mainStage;
 		
 	 	fromHostQ = new LinkedBlockingQueue<Byte>(); // data from the host
     	fromKbdQ  = new LinkedBlockingQueue<Byte>(); // data from the keyboard (or faked data)
@@ -137,43 +152,43 @@ public class DasherJ extends Application {
     	   	
         // Create and set up the window.
         mainStage.setTitle( "DasherJ Terminal Emulator" );
+
         //window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		vboxPane = new VBox( 4 );
-		Scene scene = new Scene( vboxPane );
+		vboxPane = new VBox();
+		borderPane = new BorderPane();	
+		borderPane.setMinSize( 0, 0 );
+		Scene scene = new Scene( borderPane );		
         
 		clipboard = Clipboard.getSystemClipboard();
 		
 		MenuBar menuBar = createMenuBar( mainStage );
-		//vboxPane.setFillWidth( true );
-		//vboxPane.setMinWidth( terminal.visible_cols * BDFfont.CHAR_PIXEL_WIDTH * Crt.DEFAULT_HORIZ_ZOOM );
 		vboxPane.getChildren().add( menuBar );
 		
 		fKeyHandler = new FKeyHandler( fromKbdQ, status );		
 		fkeyGrid = new FKeyGrid( status, fKeyHandler, mainStage, scene );
 		vboxPane.getChildren().add( fkeyGrid.grid );
-
-		//scene.addEventHandler( ActionEvent.ANY, fKeyHandler );
-        
+ 	
+		borderPane.setTop( vboxPane );
+		
         crt = new Crt( terminal );
-        crt.canvas.setWidth( terminal.visible_cols * BDFfont.CHAR_PIXEL_WIDTH * Crt.DEFAULT_HORIZ_ZOOM );
-        crt.canvas.setHeight( (terminal.visible_lines + 1) * BDFfont.CHAR_PIXEL_HEIGHT * Crt.DEFAULT_VERT_ZOOM );
-
-        crt.canvas.getTransforms().add( new Scale(1,2) );
+        crt.setWidth( terminal.visible_cols * BDFfont.CHAR_PIXEL_WIDTH * DEFAULT_HORIZ_ZOOM );
+        crt.setHeight( terminal.visible_lines * BDFfont.CHAR_PIXEL_HEIGHT * DEFAULT_VERT_ZOOM );
+        scale = new Scale( DEFAULT_HORIZ_ZOOM, DEFAULT_VERT_ZOOM );
+        crt.getTransforms().add( scale );
         
-        //crt.canvas.setScaleY( 2.0 );
-        // add the crt canvas to the content pane.
-        vboxPane.getChildren().add( crt.canvas );
-        //crt.canvas.setFocusable(true);
+        borderPane.setLeft( crt );
+        
+        // USEFUL for DEBUGGING LAYOUT: borderPane.setStyle( "-fx-background-color: red;" ); 
         
         // install our keyboard handler
         keyHandler = new KeyboardHandler( fromKbdQ, status );
         scene.addEventHandler( KeyEvent.ANY, keyHandler );
       
         // we don't want the user randomly farting around with the terminal size..
-        // window.setResizable( false );
+        //mainStage.setResizable( false );
              
         statusBar = new DasherStatusBar( status );
-        vboxPane.getChildren().add( statusBar );
+        borderPane.setBottom( statusBar );
         
         Timeline updateStatusBarTimeline = new Timeline( new KeyFrame( Duration.millis( DasherStatusBar.STATUS_REFRESH_MS ),
         		new EventHandler<ActionEvent>() {
@@ -187,12 +202,27 @@ public class DasherJ extends Application {
         
         // customise icon
         mainStage.getIcons().add( new Image( DasherJ.class.getResourceAsStream( ICON )));
+        
+        mainStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+        	@Override
+        	public void handle( WindowEvent we ) {
+				if (sc != null && sc.connected) {
+					sc.close();
+				}
+				if (tc != null && tc.connected) {
+					tc.close();
+				}
+				System.out.println( "DasherJ clean exit" );
+			    Platform.exit();
+				System.exit( 0 );       		
+        	}
+        });
 
         if (haveConnectHost) startTelnet( connectHost, connectPort );
         
         /* Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms */
-        Timeline updateCrtTimeline = new Timeline( new KeyFrame( Duration.millis( CRT_REFRESH_MS ), 
-        										   				 new EventHandler<ActionEvent>() {
+        updateCrtTimeline = new Timeline( new KeyFrame( Duration.millis( CRT_REFRESH_MS ), 
+        										   		new EventHandler<ActionEvent>() {
         	public void handle( ActionEvent ae ) {
         			status.blinkCountdown--;
               		if (status.dirty || status.blinkCountdown < 1) {
@@ -208,8 +238,10 @@ public class DasherJ extends Application {
         updateCrtTimeline.setCycleCount( Timeline.INDEFINITE );
         updateCrtTimeline.play();
         
-        // Display the window.
+        // Display the window.    
         mainStage.setScene( scene );
+        widthOverhead = mainStage.getWidth() - crt.getWidth();
+        heightOverhead = mainStage.getHeight() - crt.getHeight();
         mainStage.show();
 	}
 	
@@ -217,6 +249,7 @@ public class DasherJ extends Application {
 		ObservableList<Integer> linesInts = FXCollections.observableArrayList( 24, 25, 36, 48, 66 );
 		ObservableList<Integer> colsInts = FXCollections.observableArrayList( 80, 81, 120, 132, 135 );
 		ObservableList<String> zoomStrings = FXCollections.observableArrayList( "Normal", "Smaller", "Tiny" );
+		//ObservableList<String> zoomStrings = FXCollections.observableArrayList( "Normal", "Smaller" );
 		ComboBox<Integer> linesCombo, colsCombo;
 		ComboBox<String> zoomCombo;
 		linesCombo = new ComboBox<Integer>( linesInts );
@@ -245,24 +278,40 @@ public class DasherJ extends Application {
 		if (rc.get() == ButtonType.APPLY) {
 			int newLines = linesCombo.getValue();
 			int newCols = colsCombo.getValue();
-			float newHzoom = Crt.DEFAULT_HORIZ_ZOOM, newVzoom = Crt.DEFAULT_VERT_ZOOM;
+			double newHzoom = DEFAULT_HORIZ_ZOOM, newVzoom = DEFAULT_VERT_ZOOM;
 			switch (zoomCombo.getValue()) {
 			case "Normal": // Normal
+				newHzoom = DEFAULT_HORIZ_ZOOM;
+				newVzoom = DEFAULT_VERT_ZOOM;
 				break;
 			case "Smaller": // Smaller
-				newHzoom = 1.0f;  newVzoom = 1.0f;
+				newHzoom = 0.75;  newVzoom = 1.0;
 				break;
 			case "Tiny": // Tiny
-				newHzoom = 0.75f;  newVzoom = 0.75f;
+				newHzoom = 0.5; newVzoom = 1.0;
 				break;
 			}
-			terminal.resize( newLines, newCols );
-			crt.setZoom( newHzoom, newVzoom );
-			float newWidth, newHeight;
-			newWidth = newCols * BDFfont.CHAR_PIXEL_WIDTH * newHzoom;
-			newHeight = (newLines + 1) * BDFfont.CHAR_PIXEL_HEIGHT * newVzoom;
-	        crt.canvas.setWidth( newWidth );
-	        crt.canvas.setHeight( newHeight );
+			updateCrtTimeline.pause();
+			
+			 terminal.resize( newLines, newCols );
+			 double newWidth =  (double) (newCols * BDFfont.CHAR_PIXEL_WIDTH);
+			 double newHeight = (double) (newLines * BDFfont.CHAR_PIXEL_HEIGHT);
+	         crt.setWidth( newWidth );
+	         crt.setHeight( newHeight );
+	         scale.setX( newHzoom );
+	         scale.setY( newVzoom );
+	         status.dirty = true;
+	         
+	         borderPane.layout();
+	         //borderPane.setPrefSize( Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE );
+	         statusBar.setMaxWidth( newWidth );
+	         statusBar.layout();
+	         
+	         //mainStage.setHeight( heightOverhead + newHeight );
+	         //mainStage.setWidth( widthOverhead + newWidth );
+	         mainStage.sizeToScene();
+	         
+	        updateCrtTimeline.play();
 		}
 	}
 	

@@ -10,8 +10,13 @@ import javafx.scene.paint.Color;
  * 
  * All painting to the main screen area happens here.
  * 
+ * N.B. This class does not need to be aware of the physical screen (or window) geometry,
+ * it simply draws pixels/images on the Canvas.  All scaling and sizing
+ * is handled by the invoking object (Dasher).
+ * 
  * @author steve
  * v. 0.9   Switch to JavaFX (from Swing)
+ *          Move zoom factors out (into DasherJ)
  * v. 0.8   Add setZoom method to support resizing
  * v. 0.7   Restore default scaling appearance (all chars double-height)
  * 			Small tidy-ups
@@ -29,17 +34,13 @@ public class Crt extends Canvas {
 	private static final String DASHER_FONT_BDF = "/resources/D410-a-12.bdf";
 	private static final int MIN_VISIBLE = 32, MAX_VISIBLE = 128;
 	private static final int PTS_PER_INCH = 72;
-	private static final float PRINT_SCALE_FACTOR = 2.0f;
-	public static final float DEFAULT_HORIZ_ZOOM = 1.0f;
-	public static final float DEFAULT_VERT_ZOOM = 2.0f;
+	private static final double PRINT_SCALE_FACTOR = 2.0; 
 	
 	private int charWidth = BDFfont.CHAR_PIXEL_WIDTH; 
 	private int charHeight = BDFfont.CHAR_PIXEL_HEIGHT; 
 	private BDFfont bdfFont;
 	
 	private Terminal terminal;
-	
-	public Canvas canvas;
 	
 	public static final Color DFLT_BG_COLOR = Color.BLACK;
 	public static final Color DFLT_FG_COLOR = Color.WHITE;
@@ -59,17 +60,18 @@ public class Crt extends Canvas {
 			System.out.printf( "Crt: Fatal Error - Could not load custom Dasher font.\n" );
 			System.exit(1);
 		}
-				
-		canvas = new Canvas(); 
-   	
-	//this.setFocusable( true );
+					
 	}
 	
-	public void setZoom( float xZoom, float yZoom ) {
-		//scaleTransform.setToIdentity();
-		//scaleTransform.scale( xZoom, yZoom );
-	}
+	@Override
+	public boolean isResizable() { return true; }
 	
+	@Override
+	public double prefWidth( double width ) { return getWidth(); }
+	
+	@Override
+	public double prefHeight( double height ) { return getHeight(); }
+		
 	/***
 	 * Paint the Crt
 	 * 
@@ -80,8 +82,8 @@ public class Crt extends Canvas {
     	
  //   	System.out.println( "Debug - paintCrt invoked" );
     	   	
-    	GraphicsContext g = canvas.getGraphicsContext2D();
-    	
+    	GraphicsContext g = getGraphicsContext2D();
+    	  	
     	renderCharCells( g );
 	
     	// draw the cursor - if on-screen
@@ -98,7 +100,6 @@ public class Crt extends Canvas {
     		}
     	}
     	
-
     }
 
     /***
@@ -148,7 +149,7 @@ public class Crt extends Canvas {
     			
     			// underscore
     			if (terminal.display[y][x].underscore) {
-    				g.setLineWidth( 1.0 );
+    				g.setLineWidth( 1.0 );    				
     				g.strokeLine( x * charWidth, (y + 1) * charHeight, (x + 1) * charWidth, (y + 1) * charHeight );
     			}
     		}
