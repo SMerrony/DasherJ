@@ -22,7 +22,7 @@ public class FKeyHandler implements EventHandler<ActionEvent> {
 	
 	@Override
 	public void handle( ActionEvent ae ) {
-		
+			
 		int modifier = 0;
 		
 		if (status.control_pressed && status.shift_pressed) { modifier = -80; }  // Ctrl-Shift
@@ -110,6 +110,7 @@ public class FKeyHandler implements EventHandler<ActionEvent> {
 			break;
 
 		}
+		ae.consume();
 	}
 
 }

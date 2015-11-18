@@ -150,6 +150,8 @@ public class FKeyGrid extends GridPane  {
 		button.setMinHeight( MIN_BTN_HEIGHT );
 		button.setMaxWidth( Double.MAX_VALUE );
 		button.addEventHandler( ActionEvent.ANY, handler );
+		// We don't want focus on these keys or they will fire with <space> press
+		button.setFocusTraversable( false );
 
 		return button;
 	}
