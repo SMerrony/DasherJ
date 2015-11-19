@@ -163,7 +163,6 @@ public class DasherJ extends Application {
         // Create and set up the window.
         mainStage.setTitle( "DasherJ Terminal Emulator" );
 
-        //window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		vboxPane = new VBox();
 		borderPane = new BorderPane();	
 		borderPane.setMinSize( 0, 0 );
@@ -262,9 +261,11 @@ public class DasherJ extends Application {
         
         // Display the window.    
         mainStage.setScene( scene );
+
+        mainStage.show();
+        
         widthOverhead = mainStage.getWidth() - crt.getWidth();
         heightOverhead = mainStage.getHeight() - crt.getHeight();
-        mainStage.show();
 	}
 	
 	public void getNewSize() {
@@ -324,16 +325,13 @@ public class DasherJ extends Application {
 	         scale.setY( newVzoom );
 	         status.dirty = true;
 	         
-	         borderPane.requestLayout(); //  .layout();
-	         //borderPane.setPrefSize( Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE );
+	         borderPane.requestLayout(); 
+
 	         statusBar.setMaxWidth( newWidth );
 	         statusBar.layout();
 	         
-	         //mainStage.setHeight( heightOverhead + newHeight );
-	         //mainStage.setWidth( widthOverhead + newWidth );
-	        
-	         mainStage.setScene( scene );
-	         mainStage.sizeToScene();
+	         mainStage.setHeight( heightOverhead + (newHeight * newVzoom) );
+	         mainStage.setWidth( widthOverhead + (newWidth * newHzoom) );
 	         
 	        updateCrtTimeline.play();
 		}
