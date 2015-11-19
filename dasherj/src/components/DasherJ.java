@@ -7,6 +7,7 @@ package components;
  * 
  * v. 0.9 Try moving to JavaFX
  *        Move default zoom factors here from Crt
+ *        Add --host= option for auto-connect 
  * v. 0.8 Add resizing/zooming functionality
  * v. 0.7 Eliminate separate blink timer
  * 		  Abstract toolbar (F-keys) into separate FKeyGrid class
@@ -60,7 +61,6 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.transform.Scale;
 import javafx.stage.FileChooser;
@@ -107,10 +107,20 @@ public class DasherJ extends Application {
 	static BufferedWriter logBuffWriter;
 	
 	static Thread screenThread, localThread, loggingThread;
+	
 	Timeline updateCrtTimeline;
 	BorderPane borderPane;
 	Scale scale;
 	Stage mainStage;
+	Scene scene;
+	Menu networkMenu;
+	MenuItem networkConnectMenuItem;
+	MenuItem networkDisconnectMenuItem; 
+    Menu serialMenu;
+    MenuItem serialConnectMenuItem;
+	MenuItem serialDisconnectMenuItem;  
+	
+	
     double widthOverhead;
     double heightOverhead;
     
@@ -157,7 +167,7 @@ public class DasherJ extends Application {
 		vboxPane = new VBox();
 		borderPane = new BorderPane();	
 		borderPane.setMinSize( 0, 0 );
-		Scene scene = new Scene( borderPane );		
+		scene = new Scene( borderPane );		
         
 		clipboard = Clipboard.getSystemClipboard();
 		
@@ -175,6 +185,7 @@ public class DasherJ extends Application {
         crt.setHeight( terminal.visible_lines * BDFfont.CHAR_PIXEL_HEIGHT * DEFAULT_VERT_ZOOM );
         scale = new Scale( DEFAULT_HORIZ_ZOOM, DEFAULT_VERT_ZOOM );
         crt.getTransforms().add( scale );
+        crt.setFocusTraversable( true );
         
         borderPane.setLeft( crt );
         
@@ -219,6 +230,17 @@ public class DasherJ extends Application {
         });
 
         if (haveConnectHost) startTelnet( connectHost, connectPort );
+        
+        // sort out the menu state if we are already connected
+        if (status.connection == ConnectionType.TELNET_CONNECTED) {
+        	networkConnectMenuItem.setDisable( true );
+        	networkDisconnectMenuItem.setDisable( false );
+        	serialMenu.setDisable( true );
+        } else if (status.connection == ConnectionType.SERIAL_CONNECTED) {
+        	serialConnectMenuItem.setDisable( true );
+        	serialDisconnectMenuItem.setDisable( false );
+        	networkMenu.setDisable( true );
+        }
         
         /* Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms */
         updateCrtTimeline = new Timeline( new KeyFrame( Duration.millis( CRT_REFRESH_MS ), 
@@ -302,13 +324,15 @@ public class DasherJ extends Application {
 	         scale.setY( newVzoom );
 	         status.dirty = true;
 	         
-	         borderPane.layout();
+	         borderPane.requestLayout(); //  .layout();
 	         //borderPane.setPrefSize( Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE );
 	         statusBar.setMaxWidth( newWidth );
 	         statusBar.layout();
 	         
 	         //mainStage.setHeight( heightOverhead + newHeight );
 	         //mainStage.setWidth( widthOverhead + newWidth );
+	        
+	         mainStage.setScene( scene );
 	         mainStage.sizeToScene();
 	         
 	        updateCrtTimeline.play();
@@ -406,9 +430,9 @@ public class DasherJ extends Application {
         
         final MenuItem loadTemplateItem = new MenuItem( "Load Template" );
         
-        final Menu serialMenu = new Menu( "Serial" );
-        final MenuItem serialConnectMenuItem = new MenuItem( "Connect" );
-		final MenuItem serialDisconnectMenuItem = new MenuItem( "Disconnect" );  
+        serialMenu = new Menu( "Serial" );
+        serialConnectMenuItem = new MenuItem( "Connect" );
+		serialDisconnectMenuItem = new MenuItem( "Disconnect" );  
         final ToggleGroup baudGroup = new ToggleGroup();
         final RadioMenuItem b300MenuItem = new RadioMenuItem( "300 baud" );
         b300MenuItem.setOnAction( new EventHandler<ActionEvent>() {
@@ -427,9 +451,9 @@ public class DasherJ extends Application {
         		public void handle( ActionEvent ae ) { sc.baudRate = 19200; }
         });
         
-        final Menu networkMenu = new Menu( "Network" );
-		final MenuItem networkConnectMenuItem = new MenuItem( "Connect" );
-		final MenuItem networkDisconnectMenuItem = new MenuItem( "Disconnect" );   
+        networkMenu = new Menu( "Network" );
+		networkConnectMenuItem = new MenuItem( "Connect" );
+		networkDisconnectMenuItem = new MenuItem( "Disconnect" );   
 		
         final Menu helpMenu = new Menu( "Help" );
         final MenuItem helpMenuItem = new MenuItem( "Online Help" );
@@ -536,7 +560,7 @@ public class DasherJ extends Application {
             		status.emulation = em;
             	}
             });
-        	//emulGroup.add( mi );
+        	emulGroup.getToggles().add( mi );
         	emulMenu.getItems().add( mi );
         	if (firstEmul) {
         		mi.setSelected( true );
