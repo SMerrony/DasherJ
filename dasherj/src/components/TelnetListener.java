@@ -1,5 +1,9 @@
 package components;
 
+/**
+ * v0.9 -  Stop with a return when finished/stopped 
+ */
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -16,7 +20,6 @@ public class TelnetListener implements Runnable {
 		fromHostQ = plFromHostQ;
 		
 		try {
-			//fromHostStream = new DataInputStream( sock.getInputStream() );
 			in =  sock.getInputStream();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -46,6 +49,7 @@ public class TelnetListener implements Runnable {
 		} 
 		
 		System.out.printf( "TelnetListener stopping\n" );
+		return;
 		
 	}
 
