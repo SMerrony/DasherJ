@@ -33,14 +33,14 @@ public class Crt extends Canvas {
 	
 	private static final String DASHER_FONT_BDF = "/resources/D410-a-12.bdf";
 	private static final int MIN_VISIBLE = 32, MAX_VISIBLE = 128;
-	private static final int PTS_PER_INCH = 72;
-	private static final double PRINT_SCALE_FACTOR = 2.0; 
 	
 	private int charWidth = BDFfont.CHAR_PIXEL_WIDTH; 
 	private int charHeight = BDFfont.CHAR_PIXEL_HEIGHT; 
 	private BDFfont bdfFont;
 	
 	private Terminal terminal;
+	
+	private GraphicsContext g;
 	
 	public static final Color DFLT_BG_COLOR = Color.BLACK;
 	public static final Color DFLT_FG_COLOR = Color.WHITE;
@@ -60,7 +60,8 @@ public class Crt extends Canvas {
 			System.out.printf( "Crt: Fatal Error - Could not load custom Dasher font.\n" );
 			System.exit(1);
 		}
-					
+		
+		g = getGraphicsContext2D();		
 	}
 	
 	@Override
@@ -81,9 +82,7 @@ public class Crt extends Canvas {
 	public void paintCrt() {
     	
  //   	System.out.println( "Debug - paintCrt invoked" );
-    	   	
-    	GraphicsContext g = getGraphicsContext2D();
-    	  	
+    	   	  	  	
     	renderCharCells( g );
 	
     	// draw the cursor - if on-screen
@@ -155,46 +154,5 @@ public class Crt extends Canvas {
     		}
     	}
     }
-    
-//	/* We don't actually print the screen graphic here, a new graphic is drawn for printing
-//     * 
-//     */
-//    @Override
-//    public int print( final Graphics pG, final PageFormat pageFormat, final int pageIndex )			
-//    		throws PrinterException  {
-//    	
-//    	GraphicsContext gc = pG.
-//    	
-//    	if (pageIndex == 0) {
-//    		
-//    		// set origin quarter-of-an-inch from page edges
-//    		pG.translate( (int) (pageFormat.getImageableX() + PTS_PER_INCH/4), (int) (pageFormat.getImageableY() + PTS_PER_INCH/4) );
-//			//AffineTransform printTransform = new AffineTransform( pageFormat.getMatrix() );
-//    		printTransform.scale(  PRINT_SCALE_FACTOR, PRINT_SCALE_FACTOR );
-//    		printTransform.translate( 200, 200);
-//    		//pG.setTransform( printTransform );
-//    		
-//    		// save the current color scheme
-//    		Color savedBgColor = bgColor, savedDimColor = dimColor, savedFgColor = fgColor;
-//    		
-//    		// set sensible colors for printing
-//    		bgColor = Color.WHITE;
-//    		dimColor = Color.GRAY;
-//    		fgColor = Color.BLACK;
-//    		    		
-//    		renderCharCells( pG );
-//    		
-//    		
-//    		
-//    		// restore colors
-//    		bgColor = savedBgColor;
-//    		dimColor = savedDimColor;
-//    		fgColor = savedFgColor;
-//    		
-//    		return PAGE_EXISTS;
-//    	} else {
-//    		return NO_SUCH_PAGE;
-//    	}
-//    }
 
 }
