@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import components.DasherJ.LocalPrintHandler;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -28,6 +29,7 @@ import javafx.stage.Stage;
  * @author steve
  * 
  * v. 0.9  - Move to JavaFX from Swing
+ *           Add separate handler for Local Print function
  * v. 0.7  - Initial implementation based on v. 0.9 of DasherQ
  *
  */
@@ -38,6 +40,7 @@ public class FKeyGrid extends GridPane  {
 	Label fKeyLabels[][], templateLabel1, templateLabel2;
 	String templateTitle;
 	FKeyHandler handler;
+	LocalPrintHandler lpHandler;
 	
 	Status status;
 	Stage mStage;
@@ -47,13 +50,17 @@ public class FKeyGrid extends GridPane  {
 	private final double MIN_BTN_HEIGHT = 20.0;
 	private final double MIN_LABEL_HEIGHT = 30.0;
 	
-	public FKeyGrid( Status pStatus, FKeyHandler pHandler, final Stage mainStage, final Scene pScene ) {
+	public FKeyGrid( Status pStatus, 
+					 FKeyHandler pHandler, 
+					 LocalPrintHandler pLPHandler, 
+					 final Stage mainStage, 
+					 final Scene pScene ) {
 		
 		status = pStatus;
 		mStage = mainStage; 
 		scene = pScene;
 		handler = pHandler;
-		Button btn;
+		lpHandler = pLPHandler;
 		
 		grid = new GridPane();
 		grid.setPadding( new Insets( 2,2,2,2 ) ); // Improve the look with a small pad inside the edge
@@ -73,12 +80,11 @@ public class FKeyGrid extends GridPane  {
 		templateLabel2.setStyle( "-fx-background-color: lightgray;" );
 		//templateLabel2.setOpaque( true );	
 		
-		grid.add( makeFKeyButton( "Loc Pr", "Local Print" ), 0, 0 );
+		grid.add( makeLocPrButton( "Loc Pr", "Local Print" ), 0, 0 );
 		
 		grid.add( makeFKeyButton( "Brk", "Command-Break" ), 0,4 );
 		
-		grid.add( btn = makeFKeyButton( "F1" ), 1,4 );
-		//scene.addMnemonic( new Mnemonic( btn, new KeyCodeCombination( KeyCode.F1 )) );
+		grid.add( makeFKeyButton( "F1" ), 1,4 );
 		grid.add( makeFKeyButton( "F2" ), 2,4 );
 		grid.add( makeFKeyButton( "F3" ), 3,4 );
 		grid.add( makeFKeyButton( "F4" ), 4,4 );
@@ -156,6 +162,19 @@ public class FKeyGrid extends GridPane  {
 		return button;
 	}
 	
+	protected Button makeLocPrButton( String label, String tooltip ) {
+		Button button = new Button( label );
+		button.setTooltip( new Tooltip( tooltip ) );
+		button.setFont( Font.font( "Arial", FontWeight.BOLD, 9 ) );
+		button.setMinWidth( MIN_BTN_WIDTH );
+		button.setMinHeight( MIN_BTN_HEIGHT );
+		button.setMaxWidth( Double.MAX_VALUE );
+		button.addEventHandler( ActionEvent.ANY, lpHandler );
+		// We don't want focus on these keys or they will fire with <space> press
+		button.setFocusTraversable( false );
+
+		return button;
+	}
 	protected Label makeFKeyLabel( String text ) {
 		Label label = new Label( text ); 
 		label.setAlignment( Pos.CENTER );

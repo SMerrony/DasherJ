@@ -9,6 +9,7 @@ package components;
  *        Move default zoom factors here from Crt
  *        Add --host= option for auto-connect 
  *        Add preferences store, remember last host 
+ *        Implement Local Print function
  * v. 0.8 Add resizing/zooming functionality
  * v. 0.7 Eliminate separate blink timer
  * 		  Abstract toolbar (F-keys) into separate FKeyGrid class
@@ -42,6 +43,11 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.print.PageLayout;
+import javafx.print.PageOrientation;
+import javafx.print.Paper;
+import javafx.print.Printer;
+import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -59,6 +65,7 @@ import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
@@ -103,6 +110,7 @@ public class DasherJ extends Application {
 
 	FKeyHandler fKeyHandler;
 	KeyboardHandler keyHandler;
+	LocalPrintHandler locPrHandler;
 
 	static FKeyGrid fkeyGrid;
 	static DasherStatusBar statusBar;
@@ -186,8 +194,10 @@ public class DasherJ extends Application {
 		MenuBar menuBar = createMenuBar( mainStage );
 		vboxPane.getChildren().add( menuBar );
 		
+		locPrHandler = new LocalPrintHandler();
+		
 		fKeyHandler = new FKeyHandler( fromKbdQ, status );		
-		fkeyGrid = new FKeyGrid( status, fKeyHandler, mainStage, scene );
+		fkeyGrid = new FKeyGrid( status, fKeyHandler, locPrHandler, mainStage, scene );
 		vboxPane.getChildren().add( fkeyGrid.grid );
  	
 		borderPane.setTop( vboxPane );
@@ -752,6 +762,8 @@ public class DasherJ extends Application {
         return menuBar;
 	}
 	
+	// GUI Actions
+	
 	protected void showAboutDialog() {
 		
 		Alert alert = new Alert( AlertType.INFORMATION );
@@ -791,7 +803,7 @@ public class DasherJ extends Application {
     	// format of arg is "--host=<hostNameOrIP>:<port>"
     	int colonIx = hostArg.indexOf( ':' );
     	if (colonIx == -1) {
-    		System.err.println( "Error - With a host/IP you must specify a port number after colon (:)" );
+    		System.err.println( "Error - With a host/IP you must spescify a port number after colon (:)" );
     		System.exit( 1 );
     	}
     	// TODO: more error checking on hostname/port
@@ -800,6 +812,27 @@ public class DasherJ extends Application {
     	haveConnectHost = true;   	
     }
     
+    public class LocalPrintHandler implements EventHandler<ActionEvent> {
+		@Override
+		public void handle( ActionEvent arg0 ) {
+			WritableImage wImage = crt.snapshot( null, null );
+			ImageView imageView = new ImageView( wImage );
+			Printer printer = Printer.getDefaultPrinter();
+			PageLayout pageLayout = printer.createPageLayout(Paper.A4, PageOrientation.LANDSCAPE, Printer.MarginType.DEFAULT);
+            double scaleX = pageLayout.getPrintableWidth() / imageView.getBoundsInParent().getWidth();
+            double scaleY = pageLayout.getPrintableHeight() / imageView.getBoundsInParent().getHeight();
+            imageView.getTransforms().add(new Scale(scaleX, scaleY));
+			PrinterJob job = PrinterJob.createPrinterJob();
+			if (job != null) {
+				if (job.showPrintDialog( mainStage )) {
+					boolean ok = job.printPage( pageLayout, imageView );
+					if (ok) job.endJob();
+				}
+			}		
+		}
+    }
+    
+    // main() should not really be required in a JavaFX program, nevertheless...
     public static void main(String[] args) {	
     	launch( args );
     }
