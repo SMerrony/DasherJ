@@ -1,6 +1,10 @@
 package components;
 
 /***
+ * v. 0.9 - Add DEFAULT_BAUD
+ *          Catch exception on connection
+ *          Remove System exit on close
+ *          Add changeBaudRate method
  * v. 0.5 - Move to JSSC serial library
  */
 
@@ -15,8 +19,9 @@ import jssc.SerialPortList;
 
 public class SerialClient {
 	
+	public static final int DEFAULT_BAUD = 9600;
+
 	public boolean connected;
-	public int baudRate = 9600;
 	public static int serialPortCount = 0;
 	public static String[] serialPortNames;
 	
@@ -39,7 +44,7 @@ public class SerialClient {
 		getComPorts();
 	}
 	
-	public boolean open( String portName ) {
+	public boolean open( String portName, int baudRate ) {
 
 		serialPort = new SerialPort( portName );
 		try {
@@ -47,8 +52,9 @@ public class SerialClient {
 			serialPort.setParams( baudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE );
 			serialPort.setFlowControlMode( SerialPort.FLOWCONTROL_NONE );
 			// serialPort.setFlowControlMode( SerialPort.FLOWCONTROL_XONXOFF_IN | SerialPort.FLOWCONTROL_XONXOFF_OUT );
-		} catch (Exception e) {
-			e.printStackTrace();
+		} catch (SerialPortException spe) {
+			spe.printStackTrace();
+			return false;
 		}
 
 		connected = true;
@@ -62,46 +68,29 @@ public class SerialClient {
 	
 	public void close() {
 		serialListenerThread.interrupt();
-
+		serialWriterThread.interrupt();
 		try {
 			serialPort.closePort();
 		} catch (SerialPortException e) {
 			e.printStackTrace();
 		}
-		// serialPort.removeEventListener();
-		// commPort.close(); // THIS HANGS ON WINDOWS 7 64-bit
 		connected = false;
-		System.exit(0);
 	}
 	
 	 public static void getComPorts(){
-		 
-//	        String     port_type;
-//	        Enumeration<?>  enu_ports  = CommPortIdentifier.getPortIdentifiers();
-//	 
-//	        while (enu_ports.hasMoreElements()) {
-//	            CommPortIdentifier port_identifier = (CommPortIdentifier) enu_ports.nextElement();
-//	 
-//	            switch(port_identifier.getPortType()){
-//	                case CommPortIdentifier.PORT_SERIAL:
-//	                    port_type   =   "Serial";
-//	                    serialPortNames[serialPortCount] = port_identifier.getName();
-//	                    serialPortCount++;
-//	                    break;
-//	                case CommPortIdentifier.PORT_PARALLEL:
-//	                    port_type   =   "Parallel";
-//	                    break;
-//	                 default:
-//	                    port_type   =   "Unknown";
-//	                    break;
-//	            }
-//	            // System.out.println("Port : "+port_identifier.getName() +" Port type : "+port_type);
-//	        }
-
 		 String[] serialPortNames = SerialPortList.getPortNames(); 
 		 for (int p = 0; p < serialPortNames.length; p++) {
 			 System.out.println( "Port : " + serialPortNames[p] );
 		 }
-		 
-	    }
+	  }
+
+	public void changeBaudRate( int i ) {
+		try {
+			serialPort.setParams( i, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE );
+		} catch (SerialPortException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
 }

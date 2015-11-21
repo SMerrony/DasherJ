@@ -8,6 +8,7 @@ package components;
  * v. 0.9 Try moving to JavaFX
  *        Move default zoom factors here from Crt
  *        Add --host= option for auto-connect 
+ *        Add preferences store, remember last host 
  * v. 0.8 Add resizing/zooming functionality
  * v. 0.7 Eliminate separate blink timer
  * 		  Abstract toolbar (F-keys) into separate FKeyGrid class
@@ -29,6 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.prefs.Preferences;
 import java.util.List;
 import java.util.Optional;
 import javafx.animation.KeyFrame;
@@ -85,16 +87,23 @@ public class DasherJ extends Application {
 	
 	private static final String ICON = "/resources/DGlogoOrange.png";
 	
+	private static final String LAST_HOST_PREF = "LAST_HOST";
+	private static final String LAST_PORT_PREF = "LAST_PORT";
+	private static final String LAST_SERIAL_PREF = "LAST_SERIAL";
+	private static final String LAST_BAUD_PREF = "LAST_BAUD";
+	
 	private static boolean haveConnectHost = false;
 	private static String  connectHost;
 	private static int	   connectPort;
 	
-	VBox vboxPane;
 	static Status status;
 	Clipboard clipboard;
-	//KeyboardFocusManager keyFocusManager;
+	
+	static Preferences prefs;
+
 	FKeyHandler fKeyHandler;
 	KeyboardHandler keyHandler;
+
 	static FKeyGrid fkeyGrid;
 	static DasherStatusBar statusBar;
 	static LocalClient lc;
@@ -109,6 +118,9 @@ public class DasherJ extends Application {
 	static Thread screenThread, localThread, loggingThread;
 	
 	Timeline updateCrtTimeline;
+	
+	// GUI elements
+	VBox vboxPane;
 	BorderPane borderPane;
 	Scale scale;
 	Stage mainStage;
@@ -134,6 +146,7 @@ public class DasherJ extends Application {
     	logQ      = new LinkedBlockingQueue<Byte>(); // data to be logged
     	
     	status = new Status();
+    	prefs = Preferences.userRoot().node( this.getClass().getName() );
     	
     	terminal = new Terminal( status, fromHostQ, fromKbdQ, logQ );
     	(screenThread = new Thread( terminal )).start();
@@ -235,10 +248,13 @@ public class DasherJ extends Application {
         	networkConnectMenuItem.setDisable( true );
         	networkDisconnectMenuItem.setDisable( false );
         	serialMenu.setDisable( true );
+        	prefs.put( LAST_HOST_PREF, status.remoteHost );
+        	prefs.put( LAST_PORT_PREF, status.remotePort );
         } else if (status.connection == ConnectionType.SERIAL_CONNECTED) {
         	serialConnectMenuItem.setDisable( true );
         	serialDisconnectMenuItem.setDisable( false );
         	networkMenu.setDisable( true );
+        	prefs.put( LAST_SERIAL_PREF, status.serialPort );
         }
         
         /* Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms */
@@ -246,11 +262,11 @@ public class DasherJ extends Application {
         										   		new EventHandler<ActionEvent>() {
         	public void handle( ActionEvent ae ) {
         			status.blinkCountdown--;
-              		if (status.dirty || status.blinkCountdown < 1) {
+              		if (status.dirty || status.blinkCountdown == 0) {
               			crt.paintCrt();  
               			status.dirty = false;
               		}
-              		if (status.blinkCountdown < 1) {
+              		if (status.blinkCountdown == 0) {
               			terminal.blinkState = !terminal.blinkState;
               			status.blinkCountdown = CRT_BLINK_COUNTER;
               		}
@@ -337,31 +353,43 @@ public class DasherJ extends Application {
 		}
 	}
 	
-  	public void getSerialPort() {
+  	public boolean getSerialPort() {
   		
-  	    TextInputDialog serialDialog = new TextInputDialog();
+ 	    String lastSerial = prefs.get( LAST_SERIAL_PREF, "n/a" );
+		if (lastSerial == "n/a") {
+			if (System.getProperty( "os.name" ).toLowerCase().indexOf( "win" ) >= 0) {
+				lastSerial = "COM1";
+			} else {
+				lastSerial =  "/dev/ttyS0";
+			}
+		}
+  	    TextInputDialog serialDialog = new TextInputDialog( lastSerial );
   	    serialDialog.setTitle( "DasherJ - Serial Port" );
   	    serialDialog.setContentText( "Port eg. COM1: or /dev/ttyS0 :" );
-		TextField port = new TextField( "COM1" );
+
 		Optional<String> rc = serialDialog.showAndWait();
 		//System.out.printf( "SCD Result %d\n", rc );
 		if (rc.isPresent()) { // OK
 			// initialise the serial port handler
 			sc = new SerialClient( fromHostQ, fromKbdQ );
-			if (sc.open( rc.get() )) {
+			if (sc.open( serialDialog.getEditor().getText(), status.baudRate )) {	
 				status.connection = ConnectionType.SERIAL_CONNECTED;
-				status.serialPort = port.getText();
+				status.serialPort = serialDialog.getEditor().getText();
+	        	prefs.put( LAST_SERIAL_PREF, status.serialPort );
+	        	prefs.putInt( LAST_BAUD_PREF, status.baudRate );
+				return true;
 			} else {
 				Alert alert = new Alert( AlertType.ERROR);
-				alert.setContentText( "Could not open " + rc.get() );
+				alert.setContentText( "Could not open " + serialDialog.getEditor().getText() );
 				alert.showAndWait();
 				status.connection = ConnectionType.DISCONNECTED;
+				return false;
 			}
-		}
-
+		} else
+			return false;
 	}
 	
-	public void getTargetHost() {
+	public boolean getTargetHost() {
   		
 		Dialog<ButtonType> dialog = new Dialog<ButtonType>();
 		dialog.setTitle( "DasherJ - Remote Host" );
@@ -370,8 +398,8 @@ public class DasherJ extends Application {
 		grid.setHgap( 10 );
 		grid.setVgap( 10 );
 		grid.setPadding(  new Insets( 20, 20, 10, 10 ) );		
-		TextField host = new TextField();
-		TextField port = new TextField( "23" );
+		TextField host = new TextField( prefs.get( LAST_HOST_PREF, "localhost" ) );
+		TextField port = new TextField( prefs.get( LAST_PORT_PREF, "23" ) );
 		grid.add( new Label( "Host:" ), 0, 0 );
 		grid.add( host, 1,  0 );
 		grid.add( new Label( "Port:" ), 0, 1 );
@@ -384,9 +412,11 @@ public class DasherJ extends Application {
 				Alert alert = new Alert( AlertType.ERROR );
 				alert.setContentText( "Could not connect to " + host + ':' + port );
 				alert.showAndWait();
-			}
-		}
-
+				return false;
+			} else 
+			return true;
+		} else
+			return false;
 	}
 	
 	private static boolean startTelnet( String host, int port ) {
@@ -396,6 +426,8 @@ public class DasherJ extends Application {
 			status.remoteHost = host;
 			status.remotePort = "" + port;
 			status.connection = ConnectionType.TELNET_CONNECTED;
+        	prefs.put( LAST_HOST_PREF, status.remoteHost );
+        	prefs.put( LAST_PORT_PREF, status.remotePort );
 			return true;
 		} else {
 			status.connection = ConnectionType.DISCONNECTED;
@@ -434,20 +466,43 @@ public class DasherJ extends Application {
         final ToggleGroup baudGroup = new ToggleGroup();
         final RadioMenuItem b300MenuItem = new RadioMenuItem( "300 baud" );
         b300MenuItem.setOnAction( new EventHandler<ActionEvent>() {
-        		public void handle( ActionEvent ae ) { sc.baudRate = 300; }
+        		public void handle( ActionEvent ae ) { 
+        			status.baudRate = 300;
+        			if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) {
+        				sc.changeBaudRate( 300 );
+        			}
+        		}
         });
         final RadioMenuItem b1200MenuItem = new RadioMenuItem( "1200 baud" );
         b1200MenuItem.setOnAction( new EventHandler<ActionEvent>() {
-        		public void handle( ActionEvent ae ) { sc.baudRate = 1200; }
+        		public void handle( ActionEvent ae ) { 
+        			status.baudRate = 1200; 
+        			if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) {
+        				sc.changeBaudRate( 1200 );
+        			}
+        		}
         });
         final RadioMenuItem b9600MenuItem = new RadioMenuItem( "9600 baud" );
         b9600MenuItem.setOnAction( new EventHandler<ActionEvent>() {
-        		public void handle( ActionEvent ae ) { sc.baudRate = 9600; }
+        		public void handle( ActionEvent ae ) { 
+        			status.baudRate = 9600; 
+        			if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) {
+        				sc.changeBaudRate( 9600 );
+        			}
+        		}
         });
         final RadioMenuItem b19200MenuItem = new RadioMenuItem( "19200 baud" );
         b19200MenuItem.setOnAction( new EventHandler<ActionEvent>() {
-        		public void handle( ActionEvent ae ) { sc.baudRate = 19200; }
+        		public void handle( ActionEvent ae ) { 
+        			status.baudRate = 19200; 
+        			if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) {
+        				sc.changeBaudRate( 19200 );
+        			}
+        		}
         });
+        
+        //default
+        b9600MenuItem.setSelected( true );
         
         networkMenu = new Menu( "Network" );
 		networkConnectMenuItem = new MenuItem( "Connect" );
@@ -573,8 +628,7 @@ public class DasherJ extends Application {
 			public void handle( ActionEvent ae ) {
 				getNewSize();
 				
-			}
-       	
+			}     	
         });
         
         emulMenu.getItems().add( new SeparatorMenuItem() );
@@ -593,7 +647,6 @@ public class DasherJ extends Application {
         	@Override
         	public void handle( ActionEvent ae ) {
         		fkeyGrid.loadTemplate();
-        		// window.pack();
         	}
         });
         
@@ -604,13 +657,13 @@ public class DasherJ extends Application {
         serialConnectMenuItem.setOnAction( new EventHandler<ActionEvent>() {
         	@Override
         	public void handle( ActionEvent ae ) {
-        		// ask the local echo client to stop
-        		fromKbdQ.offer( LocalClient.GO_ONLINE );
-        		getSerialPort();
-        		serialConnectMenuItem.setDisable( sc.connected );
-        		networkMenu.setDisable( sc.connected );
-        		serialDisconnectMenuItem.setDisable ( !sc.connected );
-        		// status.serialPort = sc.serialPort.toString();
+        		if (getSerialPort()) {
+        			// ask the local echo client to stop
+        			fromKbdQ.offer( LocalClient.GO_ONLINE );
+        			serialConnectMenuItem.setDisable( sc.connected );
+        			networkMenu.setDisable( sc.connected );
+        			serialDisconnectMenuItem.setDisable ( !sc.connected );
+        		}
         	}
         });
         serialMenu.getItems().add( serialConnectMenuItem );
@@ -648,13 +701,13 @@ public class DasherJ extends Application {
         networkConnectMenuItem.setOnAction( new EventHandler<ActionEvent>() {
         	@Override
         	public void handle( ActionEvent ae ) {
-        		// ask the local echo client to stop
-        		fromKbdQ.offer( LocalClient.GO_ONLINE );
-        		getTargetHost();
-        		networkConnectMenuItem.setDisable( tc.connected );
-        		serialMenu.setDisable( tc.connected );
-        		networkDisconnectMenuItem.setDisable( !tc.connected );
-        		// statusBar.updateStatus();
+        		if (getTargetHost()) {
+        			// ask the local echo client to stop
+        			fromKbdQ.offer( LocalClient.GO_ONLINE );
+        			networkConnectMenuItem.setDisable( tc.connected );
+        			serialMenu.setDisable( tc.connected );
+        			networkDisconnectMenuItem.setDisable( !tc.connected );
+        		}
         	}
         });
         networkMenu.getItems().add( networkConnectMenuItem );

@@ -5,6 +5,7 @@ package components;
  * 
  * @author steve
  *
+ * v. 0.9 - Add baudRate
  * v. 0.8 - Add visible-lines/cols properties
  * v. 0.7 - Add blinkCountdown
  *
@@ -30,6 +31,7 @@ public class Status {
 	}
 	public int visLines, visCols;
 	public String serialPort, remoteHost, remotePort;
+	public int baudRate;
 	public boolean logging;
 	public boolean control_pressed, shift_pressed, holding, dirty;
 	
@@ -45,6 +47,7 @@ public class Status {
 		emulation = EmulationType.D200;
 		visLines = Terminal.DEFAULT_LINES;
 		visCols = Terminal.DEFAULT_COLS;
+		baudRate = SerialClient.DEFAULT_BAUD;
 		dirty = true;
 		blinkCountdown = 10;
 	}

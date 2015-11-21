@@ -32,7 +32,9 @@ public final class SerialListener implements Runnable {
 						Thread.sleep( 50 );
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
-						e.printStackTrace();
+						//e.printStackTrace();
+						System.out.println( "Serial Listener stopping" );
+						return;
 					}
 				} else {
 					for (int c= 0; c < buffer.length; c++) {
@@ -42,7 +44,8 @@ public final class SerialListener implements Runnable {
 					// System.out.printf( "SerialListener got: %s\n", buffer.toString() );
 			}
 		} catch (SerialPortException ioe) {
-			ioe.printStackTrace();
+			//ioe.printStackTrace();
+			System.out.println( "Serial Listener stopping" );
 		} 
 	}
 
