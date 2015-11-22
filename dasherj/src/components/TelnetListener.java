@@ -35,8 +35,11 @@ public class TelnetListener implements Runnable {
 		int len = -1;
 
 		try {
-			while (true) {
-				if((len = in.read( buffer )) > -1) {
+			while ((len = in.read( buffer )) != -1) {
+				if (buffer == null) {
+					System.out.printf( "TelnetListener stopping\n" );
+					return;
+				} else {
 					for (int c= 0; c < len; c++) {
 						fromHostQ.offer( buffer[c] );
 						//System.out.printf( "TelnetListener got %d\n", buffer[c] );
@@ -45,7 +48,7 @@ public class TelnetListener implements Runnable {
 				}
 			}
 		} catch (IOException ioe) {
-			//ioe.printStackTrace();
+			ioe.printStackTrace();
 		} 
 		
 		System.out.printf( "TelnetListener stopping\n" );
