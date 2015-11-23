@@ -13,6 +13,7 @@ import javafx.scene.media.AudioClip;
  * @author steve
  * 
  * v.0.9 -  Change to JavaFX AudioClip player for beep sound
+ *          Add sendModelID method, implement for D210 
  * v.0.8 -  Add resize method
  * v.0.6 -  Extend self-test to behave like DasherQ
  * 			Introduce DEFAULT_COLS/LINES, MAX_VISIBLE_COLS/LINES, TOTAL_COLS/LINES & visible_cols/lines
@@ -413,13 +414,7 @@ public class Terminal implements Runnable {
 				if (inCommand) {
 					switch (ch) {
 					case 'C':	 	// REQUIRES RESPONSE
-						// TODO: read model ID
-						fromKbdQ.offer( (byte) 036 );
-						fromKbdQ.offer( (byte) 0157 );
-						fromKbdQ.offer( (byte) 043 );  // model report
-						fromKbdQ.offer( (byte) 041 );  // D100/D200
-						fromKbdQ.offer( (byte) 0b01001010 ); // see p.2-7 of D100/D200 User Manual
-						fromKbdQ.offer( (byte) 003 );  // firmware code
+						sendModelID();
 						skipChar = true;
 						break;
 					case 'D':
@@ -558,7 +553,6 @@ public class Terminal implements Runnable {
 					skipChar = true;
 					break;
 				case BELL:
-					// Toolkit.getDefaultToolkit().beep();
 					BEEP_AUDIOCLIP.play();
 					skipChar = true;
 					break;
@@ -707,7 +701,6 @@ public class Terminal implements Runnable {
 
 				status.dirty = true;
 
-
 			}
 
 		} 
@@ -716,4 +709,27 @@ public class Terminal implements Runnable {
 		}
 
 	}
+	
+	private void sendModelID() {
+		switch (status.emulation) {
+		case D200:
+			fromKbdQ.offer( (byte) 036 );
+			fromKbdQ.offer( (byte) 0157 );
+			fromKbdQ.offer( (byte) 043 );  // model report
+			fromKbdQ.offer( (byte) 041 );  // D100/D200
+			fromKbdQ.offer( (byte) 'Z' ); // see p.2-7 of D100/D200 User Manual
+			fromKbdQ.offer( (byte) 003 );  // firmware code
+			break;
+		case D210:
+			fromKbdQ.offer( (byte) 036 );
+			fromKbdQ.offer( (byte) 0157 );
+			fromKbdQ.offer( (byte) 043 );  // model report
+			fromKbdQ.offer( (byte) 050 );  // D210
+			fromKbdQ.offer( (byte) 'Z' ); // see p.2-7 of D100/D200 User Manual
+			fromKbdQ.offer( (byte) 003 );  // firmware code
+			break;
+			
+		}
+	}
+
 }
