@@ -54,6 +54,7 @@ public class KeyboardHandler implements EventHandler<KeyEvent> {
 		else if (kEv.isShiftDown())
 			status.shift_pressed = true;
 		
+		modifier = 0;
 		if (status.control_pressed && status.shift_pressed) { modifier = -80; }  // Ctrl-Shift
 		if (status.control_pressed && !status.shift_pressed) { modifier = -64; } // Ctrl
 		if (!status.control_pressed && status.shift_pressed) { modifier = -16; } // Shift
