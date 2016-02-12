@@ -22,8 +22,7 @@ public class SerialClient {
 	public static final int DEFAULT_BAUD = 9600;
 
 	public boolean connected;
-	public static int serialPortCount = 0;
-	public static String[] serialPortNames;
+	public String[] serialPortNames;
 	
 	// the shared queues
 	private BlockingQueue<Byte> fromHostQ, fromKeybdQ;
@@ -32,10 +31,6 @@ public class SerialClient {
 	
 	// private CommPort commPort;
 	SerialPort serialPort;
-	
-	InputStream in;
-	// BufferedInputStream bIn;
-	OutputStream out;
 	
 	public SerialClient( BlockingQueue<Byte> fromHostQ, BlockingQueue<Byte> fromKeybdQ ) {
 		this.fromHostQ = fromHostQ;
@@ -78,10 +73,10 @@ public class SerialClient {
 	}
 	
 	 public static void getComPorts(){
-		 String[] serialPortNames = SerialPortList.getPortNames(); 
-		 for (int p = 0; p < serialPortNames.length; p++) {
-			 System.out.println( "Port : " + serialPortNames[p] );
-		 }
+            String[] serialPortNames = SerialPortList.getPortNames(); 
+            for (String serialPortName : serialPortNames) {
+                System.out.println("Port : " + serialPortName);
+            }
 	  }
 
 	public void changeBaudRate( int i ) {

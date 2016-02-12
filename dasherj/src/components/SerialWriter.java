@@ -1,7 +1,5 @@
 package components;
 
-//import gnu.io.SerialPort;
-import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
 
 import jssc.SerialPort;
@@ -9,47 +7,45 @@ import jssc.SerialPortException;
 
 public class SerialWriter implements Runnable {
 
-	SerialPort serialPort;
-	OutputStream out;
-	BlockingQueue<Byte> fromKeybdQ;
-	
-	public SerialWriter( SerialPort serialPort2, BlockingQueue<Byte> fromKeybdQ) {
-		this.serialPort = serialPort2;
-		this.fromKeybdQ = fromKeybdQ;
-	}
+    SerialPort serialPort;
+    BlockingQueue<Byte> fromKeybdQ;
 
-	@Override
-	public void run() {
+    public SerialWriter(SerialPort serialPort2, BlockingQueue<Byte> fromKeybdQ) {
+        this.serialPort = serialPort2;
+        this.fromKeybdQ = fromKeybdQ;
+    }
 
-		Byte b = 0;
-		boolean cont = true;
+    @Override
+    public void run() {
 
-		while (cont) {
-			try {
-				b = fromKeybdQ.take();
-			} catch (InterruptedException e) {
-				return;
-			}
+        Byte b;
+        boolean cont = true;
 
-			if (b == 2) { 
-				try {
-					serialPort.sendBreak( 110 );
-				} catch (SerialPortException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			} else {
-				try {
-					serialPort.writeByte( b );
-					// System.out.printf( "SerialWriter - Wrote to serial port: %s\n", b);
-				} catch (SerialPortException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
+        while (cont) {
+            try {
+                b = fromKeybdQ.take();
+            } catch (InterruptedException e) {
+                return;
+            }
 
+            if (b == 2) {
+                try {
+                    serialPort.sendBreak(110);
+                } catch (SerialPortException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            } else {
+                try {
+                    serialPort.writeByte(b);
+                    // System.out.printf( "SerialWriter - Wrote to serial port: %s\n", b);
+                } catch (SerialPortException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }
 
-	}
+    }
 
 }

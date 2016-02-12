@@ -89,7 +89,7 @@ public class DasherJ extends Application {
   // in a close approximation of a physical DASHER display ratio
   public static final double DEFAULT_VERT_ZOOM = 2.0; 
 
-  private static final double VERSION = 0.9;
+  private static final double VERSION = 0.91;
   private static final int COPYRIGHT_YEAR = 2016;
   private static final String RELEASE_STATUS = "Beta";
   private static final String HELP_URL_TEXT = "http://stephenmerrony.co.uk/dg/doku.php?id=software:newsoftware:dasherj";
@@ -101,31 +101,31 @@ public class DasherJ extends Application {
   private static final String LAST_SERIAL_PREF = "LAST_SERIAL";
   private static final String LAST_BAUD_PREF = "LAST_BAUD";
 
-  private static boolean haveConnectHost = false;
-  private static String  connectHost;
-  private static int	   connectPort;
+  private boolean haveConnectHost = false;
+  private String  connectHost;
+  private int	  connectPort;
 
-  static Status status;
+  Status status;
   Clipboard clipboard;
 
-  static Preferences prefs;
+  Preferences prefs;
 
   FKeyHandler fKeyHandler;
   KeyboardHandler keyHandler;
   LocalPrintHandler locPrHandler;
 
-  static FKeyGrid fkeyGrid;
-  static DasherStatusBar statusBar;
-  static LocalClient lc;
-  static SerialClient sc;
-  static TelnetClient tc;
-  static BlockingQueue<Byte> fromHostQ, fromKbdQ, logQ;
-  static Crt crt;
-  static Terminal terminal;
-  static File logFile;
-  static BufferedWriter logBuffWriter;
+  FKeyGrid fkeyGrid;
+  DasherStatusBar statusBar;
+  LocalClient lc;
+  SerialClient sc;
+  TelnetClient tc;
+  BlockingQueue<Byte> fromHostQ, fromKbdQ, logQ;
+  Crt crt;
+  Terminal terminal;
+  File logFile;
+  BufferedWriter logBuffWriter;
 
-  static Thread screenThread, localThread, loggingThread;
+  Thread screenThread, localThread, loggingThread;
 
   Timeline updateCrtTimeline;
 
@@ -151,9 +151,9 @@ public class DasherJ extends Application {
 
     this.mainStage = mainStage;
 
-    fromHostQ = new LinkedBlockingQueue<Byte>(); // data from the host
-    fromKbdQ  = new LinkedBlockingQueue<Byte>(); // data from the keyboard (or faked data)
-    logQ      = new LinkedBlockingQueue<Byte>(); // data to be logged
+    fromHostQ = new LinkedBlockingQueue<>(); // data from the host
+    fromKbdQ  = new LinkedBlockingQueue<>(); // data from the keyboard (or faked data)
+    logQ      = new LinkedBlockingQueue<>(); // data to be logged
 
     status = new Status();
     prefs = Preferences.userRoot().node( this.getClass().getName() );
@@ -222,32 +222,25 @@ public class DasherJ extends Application {
     statusBar = new DasherStatusBar( status );
     borderPane.setBottom( statusBar );
 
-    Timeline updateStatusBarTimeline = new Timeline( new KeyFrame( Duration.millis( DasherStatusBar.STATUS_REFRESH_MS ),
-        new EventHandler<ActionEvent>() {
-      @Override
-      public void handle( ActionEvent ae ) {
-        statusBar.updateStatus();
-      }
-    }));
+    Timeline updateStatusBarTimeline = new Timeline( new KeyFrame( Duration.millis( DasherStatusBar.STATUS_REFRESH_MS ), 
+                                                     (ActionEvent ae) -> statusBar.updateStatus() 
+                                                    ));
     updateStatusBarTimeline.setCycleCount( Timeline.INDEFINITE );
     updateStatusBarTimeline.play();
 
     // customise icon
     mainStage.getIcons().add( new Image( DasherJ.class.getResourceAsStream( ICON )));
 
-    mainStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-      @Override
-      public void handle( WindowEvent we ) {
+    mainStage.setOnCloseRequest( (WindowEvent we) -> {
         if (sc != null && sc.connected) {
-          sc.close();
+            sc.close();
         }
         if (tc != null && tc.connected) {
-          tc.close();
+            tc.close();
         }
         System.out.println( "DasherJ clean exit" );
         Platform.exit();
-        System.exit( 0 );       		
-      }
+        System.exit( 0 );
     });
 
     if (haveConnectHost) startTelnet( connectHost, connectPort );
@@ -267,20 +260,18 @@ public class DasherJ extends Application {
     }
 
     /* Euro screen refresh rate was 50Hz = 20ms, US was 60Hz = 17ms */
-    updateCrtTimeline = new Timeline( new KeyFrame( Duration.millis( CRT_REFRESH_MS ), 
-        new EventHandler<ActionEvent>() {
-      public void handle( ActionEvent ae ) {
-        status.blinkCountdown--;
-        if (status.dirty || status.blinkCountdown == 0) {
-          crt.paintCrt();  
-          status.dirty = false;
-        }
-        if (status.blinkCountdown == 0) {
-          terminal.blinkState = !terminal.blinkState;
-          status.blinkCountdown = CRT_BLINK_COUNTER;
-        }
-      }
-    }));
+      updateCrtTimeline = new Timeline(new KeyFrame(Duration.millis(CRT_REFRESH_MS),
+              (ActionEvent ae) -> {
+                  status.blinkCountdown--;
+                  if (status.dirty || status.blinkCountdown == 0) {
+                      crt.paintCrt();
+                      status.dirty = false;
+                  }
+                  if (status.blinkCountdown == 0) {
+                      terminal.blinkState = !terminal.blinkState;
+                      status.blinkCountdown = CRT_BLINK_COUNTER;
+                  }
+              }));
     updateCrtTimeline.setCycleCount( Timeline.INDEFINITE );
     updateCrtTimeline.play();
 
@@ -300,13 +291,13 @@ public class DasherJ extends Application {
     //ObservableList<String> zoomStrings = FXCollections.observableArrayList( "Normal", "Smaller" );
     ComboBox<Integer> linesCombo, colsCombo;
     ComboBox<String> zoomCombo;
-    linesCombo = new ComboBox<Integer>( linesInts );
+    linesCombo = new ComboBox<>( linesInts );
     linesCombo.setValue( 24 );
-    colsCombo = new ComboBox<Integer>( colsInts );
+    colsCombo = new ComboBox<>( colsInts );
     colsCombo.setValue( 80 );
-    zoomCombo = new ComboBox<String>( zoomStrings );
+    zoomCombo = new ComboBox<>( zoomStrings );
     zoomCombo.setValue( "Normal" );
-    Dialog<ButtonType> newSizeDialog = new Dialog<ButtonType>();
+    Dialog<ButtonType> newSizeDialog = new Dialog<>();
     newSizeDialog.setTitle( "Resize" );
     newSizeDialog.getDialogPane().getButtonTypes().addAll( ButtonType.CANCEL, ButtonType.APPLY );
     GridPane grid = new GridPane();
@@ -365,8 +356,8 @@ public class DasherJ extends Application {
   public boolean getSerialPort() {
 
     String lastSerial = prefs.get( LAST_SERIAL_PREF, "n/a" );
-    if (lastSerial == "n/a") {
-      if (System.getProperty( "os.name" ).toLowerCase().indexOf( "win" ) >= 0) {
+    if (lastSerial.equals("n/a")) {
+      if (System.getProperty( "os.name" ).toLowerCase().contains( "win" )) {
         lastSerial = "COM1";
       } else {
         lastSerial =  "/dev/ttyS0";
@@ -399,7 +390,7 @@ public class DasherJ extends Application {
 
   public boolean getTargetHost() {
 
-    Dialog<ButtonType> dialog = new Dialog<ButtonType>();
+    Dialog<ButtonType> dialog = new Dialog<>();
     dialog.setTitle( "DasherJ - Remote Host" );
     dialog.getDialogPane().getButtonTypes().addAll( ButtonType.CANCEL, ButtonType.OK );
     GridPane grid = new GridPane();
@@ -427,7 +418,7 @@ public class DasherJ extends Application {
       return false;
   }
 
-  private static boolean startTelnet( String host, int port ) {
+  private boolean startTelnet( String host, int port ) {
     // initialise the telnet session handler
     tc = new TelnetClient( fromHostQ, fromKbdQ );
     if (tc.open( host, port )) {
@@ -506,6 +497,7 @@ public class DasherJ extends Application {
     menuBar.getMenus().add( fileMenu ); 
 
     startLoggingMenuItem.setOnAction( new EventHandler<ActionEvent>() {
+      @Override
       public void handle( ActionEvent ae ) {
         final FileChooser loggingFileChooser = new FileChooser( );
         loggingFileChooser.setTitle( "Open Log File" );
@@ -682,19 +674,19 @@ public class DasherJ extends Application {
     alert.setTitle( "About DasherJ" );
     alert.setHeaderText( null );
     alert.setContentText( String.format(
-        "Dasher Terminal Emulator\n\n" +
-            "Version %s (%s)\n\n" +
+        "Dasher Terminal Emulator%n%n" +
+            "Version %s (%s)%n%n" +
             "Copyright \u00a9%s Steve Merrony",
             VERSION, RELEASE_STATUS, COPYRIGHT_YEAR ));
     alert.setGraphic( new ImageView( new Image( DasherJ.class.getResourceAsStream( ICON )) ));
     alert.showAndWait();
   }
 
-  private static void parseHost( String hostArg ) {
+  private void parseHost( String hostArg ) {
     // format of arg is "--host=<hostNameOrIP>:<port>"
     int colonIx = hostArg.indexOf( ':' );
     if (colonIx == -1) {
-      System.err.println( "Error - With a host/IP you must spescify a port number after colon (:)" );
+      System.err.println( "Error - With a host/IP you must specify a port number after colon (:)" );
       System.exit( 1 );
     }
     // TODO: more error checking on hostname/port
