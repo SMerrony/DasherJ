@@ -1,4 +1,26 @@
+/* 
+ * Copyright (C) 2016 Stephen Merrony
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package components;
+
+/**
+ * TelnetClient runs the reader and writer threads for telnet
+ * 
+ * v.1.0 Add restart() method
+ */
 
 import java.net.*;
 import java.util.concurrent.BlockingQueue;
@@ -49,14 +71,21 @@ public class TelnetClient {
 	
 	// the shared queues
 	BlockingQueue<Byte> lFromHostQ, lFromKeybdQ;
+        
+        private String host;
+        private Integer port;
 	
 	public TelnetClient(BlockingQueue<Byte> fromHostQ, BlockingQueue<Byte> fromKeybdQ) {
 		lFromHostQ = fromHostQ;
 		lFromKeybdQ = fromKeybdQ;
 	}
 
-	public boolean open( String host, Integer port ) {
-		
+	public boolean open( String pHost, Integer pPort ) {
+	
+            // save the host and port in case of restarting the session
+            host = pHost;
+            port = pPort;
+            
 		try {
 			sock = new Socket( host, port );
 			connected = true;
@@ -78,6 +107,7 @@ public class TelnetClient {
 	}
 	
 	public void close() {
+            if (connected) {
 		try {
 			telnetListenerThread.interrupt();
 			telnetWriterThread.interrupt();
@@ -87,6 +117,12 @@ public class TelnetClient {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+            }
 	}
 
+        public boolean restart() {
+            if (!connected) return false;
+            close();
+            return open( host, port );
+        }
 }

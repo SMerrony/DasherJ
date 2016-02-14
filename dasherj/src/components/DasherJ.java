@@ -1,3 +1,19 @@
+/* 
+ * Copyright (C) 2016 Stephen Merrony
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package components;
 
 /**
@@ -5,6 +21,8 @@ package components;
  * 
  * @author steve
  * 
+ * v. 1.0 Clean-ups suggested by FindBugs
+ *        Add Restart Session option to Telnet menu
  * v. 0.9 Try moving to JavaFX
  *        Move default zoom factors here from Crt
  *        Add --host= option for auto-connect 
@@ -116,9 +134,9 @@ public class DasherJ extends Application {
 
   FKeyGrid fkeyGrid;
   DasherStatusBar statusBar;
-  LocalClient lc;
-  SerialClient sc;
-  TelnetClient tc;
+  LocalClient localClient;
+  SerialClient serialClient;
+  TelnetClient telnetClient;
   BlockingQueue<Byte> fromHostQ, fromKbdQ, logQ;
   Crt crt;
   Terminal terminal;
@@ -136,11 +154,9 @@ public class DasherJ extends Application {
   Stage mainStage;
   Scene scene;
   Menu networkMenu;
-  MenuItem networkConnectMenuItem;
-  MenuItem networkDisconnectMenuItem; 
+  MenuItem networkConnectMenuItem, networkDisconnectMenuItem, networkRestartMenuItem; 
   Menu serialMenu;
-  MenuItem serialConnectMenuItem;
-  MenuItem serialDisconnectMenuItem;  
+  MenuItem serialConnectMenuItem, serialDisconnectMenuItem;  
 
 
   double widthOverhead;
@@ -231,12 +247,12 @@ public class DasherJ extends Application {
     // customise icon
     mainStage.getIcons().add( new Image( DasherJ.class.getResourceAsStream( ICON )));
 
-    mainStage.setOnCloseRequest( (WindowEvent we) -> {
-        if (sc != null && sc.connected) {
-            sc.close();
+    mainStage.setOnCloseRequest((WindowEvent we) -> {
+        if (serialClient != null && serialClient.connected) {
+            serialClient.close();
         }
-        if (tc != null && tc.connected) {
-            tc.close();
+        if (telnetClient != null && telnetClient.connected) {
+            telnetClient.close();
         }
         System.out.println( "DasherJ clean exit" );
         Platform.exit();
@@ -370,8 +386,8 @@ public class DasherJ extends Application {
     
     if (rc.isPresent()) { // OK
       // initialise the serial port handler
-      sc = new SerialClient( fromHostQ, fromKbdQ );
-      if (sc.open( serialDialog.getEditor().getText(), status.baudRate )) {	
+      serialClient = new SerialClient( fromHostQ, fromKbdQ );
+      if (serialClient.open( serialDialog.getEditor().getText(), status.baudRate )) {	
         status.connection = ConnectionType.SERIAL_CONNECTED;
         status.serialPort = serialDialog.getEditor().getText();
         prefs.put( LAST_SERIAL_PREF, status.serialPort );
@@ -420,8 +436,8 @@ public class DasherJ extends Application {
 
   private boolean startTelnet( String host, int port ) {
     // initialise the telnet session handler
-    tc = new TelnetClient( fromHostQ, fromKbdQ );
-    if (tc.open( host, port )) {
+    telnetClient = new TelnetClient( fromHostQ, fromKbdQ );
+    if (telnetClient.open( host, port )) {
       status.remoteHost = host;
       status.remotePort = "" + port;
       status.connection = ConnectionType.TELNET_CONNECTED;
@@ -461,24 +477,24 @@ public class DasherJ extends Application {
     serialDisconnectMenuItem = new MenuItem( "Disconnect" );  
     final ToggleGroup baudGroup = new ToggleGroup();
     final RadioMenuItem b300MenuItem = new RadioMenuItem( "300 baud" );
-    b300MenuItem.setOnAction( (ae) -> { 
+    b300MenuItem.setOnAction((ae) -> { 
       status.baudRate = 300;
-      if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) sc.changeBaudRate( 300 );
+      if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) serialClient.changeBaudRate( 300 );
     });
     final RadioMenuItem b1200MenuItem = new RadioMenuItem( "1200 baud" );
-    b1200MenuItem.setOnAction( (ae) -> { 
+    b1200MenuItem.setOnAction((ae) -> { 
       status.baudRate = 1200;
-      if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) sc.changeBaudRate( 1200 );
+      if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) serialClient.changeBaudRate( 1200 );
     });
     final RadioMenuItem b9600MenuItem = new RadioMenuItem( "9600 baud" );
-    b9600MenuItem.setOnAction(  (ae) -> { 
+    b9600MenuItem.setOnAction((ae) -> { 
       status.baudRate = 9600;
-      if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) sc.changeBaudRate( 9600 );
+      if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) serialClient.changeBaudRate( 9600 );
     });
     final RadioMenuItem b19200MenuItem = new RadioMenuItem( "19200 baud" );
-    b19200MenuItem.setOnAction(  (ae) -> { 
+    b19200MenuItem.setOnAction((ae) -> { 
       status.baudRate = 19200;
-      if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) sc.changeBaudRate( 19200 );
+      if (status.connection == Status.ConnectionType.SERIAL_CONNECTED) serialClient.changeBaudRate( 19200 );
     });
 
     //default
@@ -486,7 +502,8 @@ public class DasherJ extends Application {
 
     networkMenu = new Menu( "Network" );
     networkConnectMenuItem = new MenuItem( "Connect" );
-    networkDisconnectMenuItem = new MenuItem( "Disconnect" );   
+    networkDisconnectMenuItem = new MenuItem( "Disconnect" ); 
+    networkRestartMenuItem = new MenuItem( "Restart Session" );
 
     final Menu helpMenu = new Menu( "Help" );
     final MenuItem helpMenuItem = new MenuItem( "Online Help" );
@@ -539,12 +556,12 @@ public class DasherJ extends Application {
     stopLoggingMenuItem.setDisable( true );
     fileMenu.getItems().add( stopLoggingMenuItem );
 
-    exitMenuItem.setOnAction( (ae) -> {
-      if (sc != null && sc.connected) {
-        sc.close();
+    exitMenuItem.setOnAction((ae) -> {
+      if (serialClient != null && serialClient.connected) {
+        serialClient.close();
       }
-      if (tc != null && tc.connected) {
-        tc.close();
+      if (telnetClient != null && telnetClient.connected) {
+        telnetClient.close();
       }
       System.out.println( "DasherJ clean exit" );
       Platform.exit();
@@ -597,22 +614,22 @@ public class DasherJ extends Application {
 
     // serial i/o
     menuBar.getMenus().add(serialMenu);
-    serialConnectMenuItem.setOnAction( (ae) -> {
+    serialConnectMenuItem.setOnAction((ae) -> {
       if (getSerialPort()) {
         // ask the local echo client to stop
         fromKbdQ.offer( LocalClient.GO_ONLINE );
-        serialConnectMenuItem.setDisable( sc.connected );
-        networkMenu.setDisable( sc.connected );
-        serialDisconnectMenuItem.setDisable ( !sc.connected );
+        serialConnectMenuItem.setDisable(serialClient.connected );
+        networkMenu.setDisable(serialClient.connected );
+        serialDisconnectMenuItem.setDisable (!serialClient.connected );
       }
     });
     serialMenu.getItems().add( serialConnectMenuItem );
 
-    serialDisconnectMenuItem.setOnAction( (ae) -> {
-      sc.close();
-      serialConnectMenuItem.setDisable( sc.connected );
-      networkMenu.setDisable( sc.connected );
-      serialDisconnectMenuItem.setDisable ( !sc.connected );
+    serialDisconnectMenuItem.setOnAction((ae) -> {
+      serialClient.close();
+      serialConnectMenuItem.setDisable(serialClient.connected );
+      networkMenu.setDisable(serialClient.connected );
+      serialDisconnectMenuItem.setDisable (!serialClient.connected );
       status.connection = Status.ConnectionType.DISCONNECTED;
       // restart local echo thread
       (localThread = new Thread(new LocalClient( fromHostQ, fromKbdQ ))).start();
@@ -634,28 +651,38 @@ public class DasherJ extends Application {
 
     // network (tcp/ip) i/o
     menuBar.getMenus().add(networkMenu);
-    networkConnectMenuItem.setOnAction( (ae) -> {
+    networkConnectMenuItem.setOnAction((ae) -> {
       if (getTargetHost()) {
         // ask the local echo client to stop
         fromKbdQ.offer( LocalClient.GO_ONLINE );
-        networkConnectMenuItem.setDisable( tc.connected );
-        serialMenu.setDisable( tc.connected );
-        networkDisconnectMenuItem.setDisable( !tc.connected );
+        networkConnectMenuItem.setDisable(telnetClient.connected );
+        serialMenu.setDisable(telnetClient.connected );
+        networkDisconnectMenuItem.setDisable(!telnetClient.connected );
+        networkRestartMenuItem.setDisable( !telnetClient.connected );
       }
     });
     networkMenu.getItems().add( networkConnectMenuItem );
 
-    networkDisconnectMenuItem.setOnAction( (ae) -> {
-      tc.close();
-      networkConnectMenuItem.setDisable( tc.connected );
-      serialMenu.setDisable( tc.connected );
-      networkDisconnectMenuItem.setDisable( !tc.connected );
+    networkDisconnectMenuItem.setOnAction((ae) -> {
+      telnetClient.close();
+      networkConnectMenuItem.setDisable(telnetClient.connected );
+      serialMenu.setDisable(telnetClient.connected );
+      networkDisconnectMenuItem.setDisable(!telnetClient.connected );
+      networkRestartMenuItem.setDisable( true );
       status.connection = Status.ConnectionType.DISCONNECTED;
       // restart local echo thread
       (localThread = new Thread(new LocalClient( fromHostQ, fromKbdQ ))).start();
     });
     networkDisconnectMenuItem.setDisable( true );
     networkMenu.getItems().add( networkDisconnectMenuItem );
+    
+    networkMenu.getItems().add( new SeparatorMenuItem() );
+    
+    networkMenu.getItems().add( networkRestartMenuItem );
+    networkRestartMenuItem.setDisable( true );
+    networkRestartMenuItem.setOnAction( (ae) -> {
+        telnetClient.restart();
+    });
 
     // Help etc.
     menuBar.getMenus().add( helpMenu );
