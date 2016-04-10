@@ -23,6 +23,7 @@ package components;
  * 
  * v. 1.0 Clean-ups suggested by FindBugs
  *        Add Restart Session option to Telnet menu
+ *        Change "Medium" HZoom to be 0.8 to scale 10px wide char cells better
  * v. 0.9 Try moving to JavaFX
  *        Move default zoom factors here from Crt
  *        Add --host= option for auto-connect 
@@ -340,7 +341,7 @@ public class DasherJ extends Application {
         newVzoom = DEFAULT_VERT_ZOOM;
         break;
       case "Smaller": // Smaller
-        newHzoom = 0.75;  newVzoom = 1.0;
+        newHzoom = 0.8;  newVzoom = 1.0;
         break;
       case "Tiny": // Tiny
         newHzoom = 0.5; newVzoom = 1.0;
