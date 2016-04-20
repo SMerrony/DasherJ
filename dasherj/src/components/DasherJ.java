@@ -21,10 +21,10 @@ package components;
  * 
  * @author steve
  * 
- * v. 1.0 Clean-ups suggested by FindBugs
+ * v.1.0 Clean-ups suggested by FindBugs
  *        Add Restart Session option to Telnet menu
  *        Change "Medium" HZoom to be 0.8 to scale 10px wide char cells better
- * v. 0.9 Try moving to JavaFX
+ * v.0.9  Move to JavaFX
  *        Move default zoom factors here from Crt
  *        Add --host= option for auto-connect 
  *        Add preferences store, remember last host 
@@ -108,7 +108,7 @@ public class DasherJ extends Application {
   // in a close approximation of a physical DASHER display ratio
   public static final double DEFAULT_VERT_ZOOM = 2.0; 
 
-  private static final double VERSION = 0.91;
+  private static final double VERSION = 1.00;
   private static final int COPYRIGHT_YEAR = 2016;
   private static final String RELEASE_STATUS = "Beta";
   private static final String HELP_URL_TEXT = "http://stephenmerrony.co.uk/dg/doku.php?id=software:newsoftware:dasherj";
