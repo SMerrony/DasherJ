@@ -15,10 +15,11 @@ import javafx.scene.paint.Color;
  * is handled by the invoking object (Dasher).
  *
  * @author steve 
+ * v. 1.1 Change to original CRT-like green colours
  * v. 0.9 Switch to JavaFX (from Swing) Move zoom factors out
  * (into DasherJ) 
- * v. 0.8 Add setZoom method to support resizing v. 0.7 Restore
- * default scaling appearance (all chars double-height) Small tidy-ups 
+ * v. 0.8 Add setZoom method to support resizing 
+ * v. 0.7 Restore default scaling appearance (all chars double-height) Small tidy-ups 
  * v. 0.6 Rename screen to terminal Big performance increase by drawing character
  * BufferedImages rather than individual pixels Fix scaling of printing (reduce
  * from 4x to 2x) Remove drawChar method and in-line 
@@ -40,8 +41,8 @@ public class Crt extends Canvas {
     private GraphicsContext g;
 
     public static final Color DFLT_BG_COLOR = Color.BLACK;
-    public static final Color DFLT_FG_COLOR = Color.WHITE;
-    public static final Color DFLT_DIM_COLOR = Color.DARKGREY;
+    public static final Color DFLT_FG_COLOR = Color.LAWNGREEN;
+    public static final Color DFLT_DIM_COLOR = Color.DARKGREEN;
 
     Color bgColor = DFLT_BG_COLOR;
     Color fgColor = DFLT_FG_COLOR;
@@ -64,16 +65,6 @@ public class Crt extends Canvas {
     @Override
     public boolean isResizable() {
         return true;
-    }
-
-    @Override
-    public double prefWidth(double width) {
-        return getWidth();
-    }
-
-    @Override
-    public double prefHeight(double height) {
-        return getHeight();
     }
 
     /**

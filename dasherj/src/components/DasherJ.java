@@ -21,7 +21,10 @@ package components;
  * 
  * @author steve
  * 
- * v.1.0 Clean-ups suggested by FindBugs
+ * v.1.1  CRT colour changes
+ *        Simplify layout widgets
+ *        Attempt to fix resizing/rescaling
+ * v.1.0  Clean-ups suggested by FindBugs
  *        Add Restart Session option to Telnet menu
  *        Change "Medium" HZoom to be 0.8 to scale 10px wide char cells better
  * v.0.9  Move to JavaFX
@@ -89,7 +92,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.transform.Scale;
@@ -108,9 +110,9 @@ public class DasherJ extends Application {
   // in a close approximation of a physical DASHER display ratio
   public static final double DEFAULT_VERT_ZOOM = 2.0; 
 
-  private static final double VERSION = 1.00;
+  private static final double VERSION = 1.1;
   private static final int COPYRIGHT_YEAR = 2016;
-  private static final String RELEASE_STATUS = "Beta";
+  private static final String RELEASE_STATUS = "Production";
   private static final String HELP_URL_TEXT = "http://stephenmerrony.co.uk/dg/doku.php?id=software:newsoftware:dasherj";
 
   private static final String ICON = "/resources/DGlogoOrange.png";
@@ -149,8 +151,8 @@ public class DasherJ extends Application {
   Timeline updateCrtTimeline;
 
   // GUI elements
-  VBox vboxPane;
-  BorderPane borderPane;
+  VBox topVboxPane;
+  VBox mainVbox;
   Scale scale;
   Stage mainStage;
   Scene scene;
@@ -158,10 +160,7 @@ public class DasherJ extends Application {
   MenuItem networkConnectMenuItem, networkDisconnectMenuItem, networkRestartMenuItem; 
   Menu serialMenu;
   MenuItem serialConnectMenuItem, serialDisconnectMenuItem;  
-
-
-  double widthOverhead;
-  double heightOverhead;
+  double initialStageWidth;
 
   @Override
   public void start( Stage mainStage ) {
@@ -200,44 +199,45 @@ public class DasherJ extends Application {
     // Create and set up the window.
     mainStage.setTitle( "DasherJ Terminal Emulator" );
 
-    vboxPane = new VBox();
-    borderPane = new BorderPane();	
-    borderPane.setMinSize( 0, 0 );
-    scene = new Scene( borderPane );		
+    topVboxPane = new VBox();
+    mainVbox = new VBox();
+    scene = new Scene( mainVbox );		
 
     clipboard = Clipboard.getSystemClipboard();
 
     MenuBar menuBar = createMenuBar( mainStage );
-    vboxPane.getChildren().add( menuBar );
+    topVboxPane.getChildren().add( menuBar );
 
     locPrHandler = new LocalPrintHandler();
 
     fKeyHandler = new FKeyHandler( fromKbdQ, status );		
     fkeyGrid = new FKeyGrid( status, fKeyHandler, locPrHandler, mainStage, scene );
-    vboxPane.getChildren().add( fkeyGrid.grid );
+    topVboxPane.getChildren().add( fkeyGrid.grid );// FIXME how to handle this changing height?
 
-    borderPane.setTop( vboxPane );
+    //borderPane.setTop( vboxPane );
+    mainVbox.getChildren().add(topVboxPane );
 
     crt = new Crt( terminal );
     crt.setWidth( terminal.visible_cols * BDFfont.CHAR_PIXEL_WIDTH * DEFAULT_HORIZ_ZOOM );
     crt.setHeight( terminal.visible_lines * BDFfont.CHAR_PIXEL_HEIGHT * DEFAULT_VERT_ZOOM );
+    // System.out.printf( "DEBUG - initial CRT width: %f\n", terminal.visible_cols * BDFfont.CHAR_PIXEL_WIDTH * DEFAULT_HORIZ_ZOOM );
     scale = new Scale( DEFAULT_HORIZ_ZOOM, DEFAULT_VERT_ZOOM );
     crt.getTransforms().add( scale );
     crt.setFocusTraversable( true );
-
-    borderPane.setLeft( crt );
-
-    // USEFUL for DEBUGGING LAYOUT: borderPane.setStyle( "-fx-background-color: red;" ); 
+    mainVbox.getChildren().add( crt );
+    
+    // USEFUL for DEBUGGING LAYOUT: 
+    //mainVbox.setStyle( "-fx-background-color: red;" ); 
 
     // install our keyboard handler
     keyHandler = new KeyboardHandler( fromKbdQ, status );
     scene.addEventHandler( KeyEvent.ANY, keyHandler );
 
     // we don't want the user randomly farting around with the terminal size..
-    //mainStage.setResizable( false );
+    mainStage.setResizable( false );
 
     statusBar = new DasherStatusBar( status );
-    borderPane.setBottom( statusBar );
+    mainVbox.getChildren().add( statusBar );
 
     Timeline updateStatusBarTimeline = new Timeline( new KeyFrame( Duration.millis( DasherStatusBar.STATUS_REFRESH_MS ), 
                                                      (ActionEvent ae) -> statusBar.updateStatus() 
@@ -294,18 +294,16 @@ public class DasherJ extends Application {
 
     // Display the window.    
     mainStage.setScene( scene );
+    mainStage.sizeToScene();
+    initialStageWidth = mainStage.getWidth();
 
     mainStage.show();
-
-    widthOverhead = mainStage.getWidth() - crt.getWidth();
-    heightOverhead = mainStage.getHeight() - crt.getHeight();
   }
 
   public void getNewSize() {
     ObservableList<Integer> linesInts = FXCollections.observableArrayList( 24, 25, 36, 48, 66 );
     ObservableList<Integer> colsInts = FXCollections.observableArrayList( 80, 81, 120, 132, 135 );
     ObservableList<String> zoomStrings = FXCollections.observableArrayList( "Normal", "Smaller", "Tiny" );
-    //ObservableList<String> zoomStrings = FXCollections.observableArrayList( "Normal", "Smaller" );
     ComboBox<Integer> linesCombo, colsCombo;
     ComboBox<String> zoomCombo;
     linesCombo = new ComboBox<>( linesInts );
@@ -350,22 +348,24 @@ public class DasherJ extends Application {
       updateCrtTimeline.pause();
 
       terminal.resize( newLines, newCols );
-      double newWidth =  (double) (newCols * BDFfont.CHAR_PIXEL_WIDTH);
-      double newHeight = (double) (newLines * BDFfont.CHAR_PIXEL_HEIGHT);
+      double newWidth =  (double) (newCols * BDFfont.CHAR_PIXEL_WIDTH );
+      double newHeight = (double) (newLines * BDFfont.CHAR_PIXEL_HEIGHT * newVzoom );
       crt.setWidth( newWidth );
       crt.setHeight( newHeight );
       scale.setX( newHzoom );
       scale.setY( newVzoom );
+      // System.out.printf( "DEBUG - new CRT width: %f\n", newWidth );
+
       status.dirty = true;
 
-      borderPane.requestLayout(); 
-
-      statusBar.setMaxWidth( newWidth );
-      statusBar.layout();
-
-      mainStage.setHeight( heightOverhead + (newHeight * newVzoom) );
-      mainStage.setWidth( widthOverhead + (newWidth * newHzoom) );
-
+      mainVbox.requestLayout();
+      
+      mainStage.sizeToScene();
+      if ((newWidth * newHzoom) > initialStageWidth)
+        mainStage.setWidth( newWidth * newHzoom);
+      else
+        mainStage.setWidth( initialStageWidth );
+      
       updateCrtTimeline.play();
     }
   }

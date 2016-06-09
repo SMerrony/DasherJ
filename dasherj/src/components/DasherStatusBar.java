@@ -1,6 +1,24 @@
+/* 
+ * Copyright (C) 2016 Stephen Merrony
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* The status bar updates itself independently based on the state of the Status object,
  * there is no need to update it explicitly from anywhere else.
  * 
+ * v.1.1 - Add background-color property
  * v.0.9 - Add baud rate to connection indicator
  * v.0.8 - Add lines/cols to emulation status
  * v.0.5 - Add logging status, add "Serial/Telnet" to connection indicator
@@ -19,9 +37,10 @@ public class DasherStatusBar extends HBox {
 	private final Label connection = new Label();
 	private final Label emulation = new Label();
 	
-	private final String etchedStyle = "-fx-border-insets: 0; " +
-									   "-fx-border-width: 2px; " +
-									   "-fx-border-color: black lightgray lightgray black;";
+    private final String etchedStyle = "-fx-border-insets: 0; "
+            + "-fx-border-width: 2px; "
+            + "-fx-background-color: white; "
+            + "-fx-border-color: black lightgray lightgray black;";
 	
 	public static final int STATUS_REFRESH_MS = 500;
 	

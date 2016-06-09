@@ -28,6 +28,8 @@ import javafx.stage.Stage;
  * 
  * @author steve
  * 
+ * v. 1.1  - Reduce MIN_LABEL_HEIGHT to save space
+ *           Introduce MAX_LABEL_HEIGHT
  * v. 0.9  - Move to JavaFX from Swing
  *           Add separate handler for Local Print function
  * v. 0.7  - Initial implementation based on v. 0.9 of DasherQ
@@ -48,7 +50,8 @@ public class FKeyGrid extends GridPane  {
 	
 	private final double MIN_BTN_WIDTH = 40.0;
 	private final double MIN_BTN_HEIGHT = 20.0;
-	private final double MIN_LABEL_HEIGHT = 30.0;
+	private final double MIN_LABEL_HEIGHT = 20.0;
+        private final double MAX_LABEL_HEIGHT = 35.0;
 	
 	public FKeyGrid( Status pStatus, 
 					 FKeyHandler pHandler, 
@@ -183,6 +186,7 @@ public class FKeyGrid extends GridPane  {
 		label.setMinWidth( MIN_BTN_WIDTH );
 		label.setMaxWidth( Double.MAX_VALUE );
 		label.setMinHeight( MIN_LABEL_HEIGHT);
+                label.setMaxHeight( MAX_LABEL_HEIGHT );
 		label.setStyle( "-fx-border-width: 1; -fx-border-color: DARKGRAY;" );
 		return label;
 	}

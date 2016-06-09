@@ -1,3 +1,19 @@
+/* 
+ * Copyright (C) 2016 Stephen Merrony
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package components;
 
 import java.util.concurrent.BlockingQueue;
@@ -13,6 +29,7 @@ import javafx.scene.media.AudioClip;
  *
  * @author steve
  *
+ * v.1.1 - Increase length of 2nd self-test line
  * v.0.9 - Change to JavaFX AudioClip player for beep sound Add sendModelID
  * method, implement for D210 v.0.8 - Add resize method v.0.6 - Extend self-test
  * to behave like DasherQ Introduce DEFAULT_COLS/LINES, MAX_VISIBLE_COLS/LINES,
@@ -198,8 +215,8 @@ public class Terminal implements Runnable {
 
     void selfTest(BlockingQueue<Byte> fromKbdQ) {
 
-        byte[] testlineHRule1 = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890".getBytes();
-        byte[] testlineHRule2 = "         1         2         3         4         5         6         7         8".getBytes();
+        byte[] testlineHRule1 = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901".getBytes();
+        byte[] testlineHRule2 = "         1         2         3         4         5         6         7         8         9         10        11        12        13        14".getBytes();
         byte[] testline1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567489!\"$%.".getBytes();
         byte[] testlineN = "3 Normal  : ".getBytes();
         byte[] testlineD = "4 Dim     : ".getBytes();
@@ -215,7 +232,7 @@ public class Terminal implements Runnable {
             fromKbdQ.offer(testlineHRule1[c]);
         }
         fromKbdQ.offer(NL);
-        for (c = 0; c < testlineHRule2.length; c++) {
+        for (c = 0; c < visible_cols; c++) {
             fromKbdQ.offer(testlineHRule2[c]);
         }
         fromKbdQ.offer(NL);
