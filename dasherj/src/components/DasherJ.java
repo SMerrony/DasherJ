@@ -23,7 +23,7 @@ package components;
  * 
  * v.1.1  CRT colour changes
  *        Simplify layout widgets
- *        Attempt to fix resizing/rescaling
+ *        Fix resizing/rescaling
  * v.1.0  Clean-ups suggested by FindBugs
  *        Add Restart Session option to Telnet menu
  *        Change "Medium" HZoom to be 0.8 to scale 10px wide char cells better
@@ -234,7 +234,7 @@ public class DasherJ extends Application {
     scene.addEventHandler( KeyEvent.ANY, keyHandler );
 
     // we don't want the user randomly farting around with the terminal size..
-    //mainStage.setResizable( false );
+    mainStage.setResizable( false );
 
     statusBar = new DasherStatusBar( status );
     mainVbox.getChildren().add( statusBar );
@@ -359,6 +359,7 @@ public class DasherJ extends Application {
       status.dirty = true;
      
       mainStage.sizeToScene();
+      mainStage.setWidth( newWidth * newHzoom );
       
       updateCrtTimeline.play();
     }
