@@ -216,7 +216,7 @@ public class Terminal implements Runnable {
     void selfTest(BlockingQueue<Byte> fromKbdQ) {
 
         byte[] testlineHRule1 = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901".getBytes();
-        byte[] testlineHRule2 = "         1         2         3         4         5         6         7         8         9         10        11        12        13        14".getBytes();
+        byte[] testlineHRule2 = "         1         2         3         4         5         6         7         8         9        10        11        12        13        14 ".getBytes();
         byte[] testline1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567489!\"$%.".getBytes();
         byte[] testlineN = "3 Normal  : ".getBytes();
         byte[] testlineD = "4 Dim     : ".getBytes();

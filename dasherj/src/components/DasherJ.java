@@ -234,7 +234,7 @@ public class DasherJ extends Application {
     scene.addEventHandler( KeyEvent.ANY, keyHandler );
 
     // we don't want the user randomly farting around with the terminal size..
-    mainStage.setResizable( false );
+    //mainStage.setResizable( false );
 
     statusBar = new DasherStatusBar( status );
     mainVbox.getChildren().add( statusBar );
@@ -357,14 +357,8 @@ public class DasherJ extends Application {
       // System.out.printf( "DEBUG - new CRT width: %f\n", newWidth );
 
       status.dirty = true;
-
-      mainVbox.requestLayout();
-      
+     
       mainStage.sizeToScene();
-      if ((newWidth * newHzoom) > initialStageWidth)
-        mainStage.setWidth( newWidth * newHzoom);
-      else
-        mainStage.setWidth( initialStageWidth );
       
       updateCrtTimeline.play();
     }
