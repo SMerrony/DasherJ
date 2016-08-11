@@ -5,6 +5,7 @@ package components;
  * 
  * @author steve
  *
+ * v. 1.2 - Add D211 emulation
  * v. 0.9 - Add baudRate
  * v. 0.8 - Add visible-lines/cols properties
  * v. 0.7 - Add blinkCountdown
@@ -18,7 +19,7 @@ public class Status {
 	public enum EmulationType { 
 		D200 (200), 
 		D210 (210),
-		// D211 (211),
+		D211 (211),
 		// D220 (220),
 		// D400 (400),
 		;

@@ -14,9 +14,10 @@ import javafx.scene.input.KeyEvent;
  *
  * @author steve
  *
- * v. 0.9 - Map PC Alt-Gr to DASHER CMD Refix sending of NewLines v. 0.7 -
- * Handle real function keys v. 0.6 - Fix sending of NewLines to be
- * DASHER-compliant (and not doubled-up!)
+ * v. 0.9 - Map PC Alt-Gr to DASHER CMD 
+ *          Refix sending of NewLines 
+ * v. 0.7 - Handle real function keys 
+ * v. 0.6 - Fix sending of NewLines to be DASHER-compliant (and not doubled-up!)
  *
  */
 public class KeyboardHandler implements EventHandler<KeyEvent> {

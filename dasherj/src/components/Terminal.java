@@ -17,9 +17,13 @@
 package components;
 
 import java.util.concurrent.BlockingQueue;
+import javafx.print.PrinterJob;
 import sun.audio.AudioPlayer;
 
 import javafx.scene.media.AudioClip;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 
 /**
  * *
@@ -29,15 +33,21 @@ import javafx.scene.media.AudioClip;
  *
  * @author steve
  *
+ * v.1.2 - Fix Read Model response for D210
+ *         Add Read Model response for D211
+ *         Add Print Screen action
  * v.1.1 - Increase length of 2nd self-test line
  * v.0.9 - Change to JavaFX AudioClip player for beep sound Add sendModelID
- * method, implement for D210 v.0.8 - Add resize method v.0.6 - Extend self-test
- * to behave like DasherQ Introduce DEFAULT_COLS/LINES, MAX_VISIBLE_COLS/LINES,
- * TOTAL_COLS/LINES & visible_cols/lines v.0.5 - Add status.dirty = true to
- * events where cursor is moved to improve responsiveness Renamed from Screen to
- * Terminal to more accurately reflect purpose Replace * at startup with "OK"
- * message Add self-test method Merge in v.0.3/4 changes Merge in improvements
- * from C++ version 0.4
+ *         method, implement for D210 
+ * v.0.8 - Add resize method v.0.6 - Extend self-test to behave like DasherQ 
+ *         Introduce DEFAULT_COLS/LINES, MAX_VISIBLE_COLS/LINES,
+ *         TOTAL_COLS/LINES & visible_cols/lines 
+ * v.0.5 - Add status.dirty = true to events where cursor is moved to improve responsiveness 
+ *         Renamed from Screen to Terminal to more accurately reflect purpose 
+ *         Replace * at startup with "OK" message 
+ *         Add self-test method 
+ *         Merge in v.0.3/4 changes 
+ *         Merge in improvements from C++ version 0.4
  */
 public class Terminal implements Runnable {
 
@@ -65,7 +75,7 @@ public class Terminal implements Runnable {
     public static final byte BLINK_ON = (byte) 14;
     public static final byte BLINK_OFF = (byte) 15;
     public static final byte WRITE_WINDOW_ADDR = (byte) 16;
-    public static final byte PRINT_WINDOW = (byte) 17;
+    public static final byte PRINT_SCREEN = (byte) 17;
     public static final byte ROLL_ENABLE = (byte) 18;
     public static final byte ROLL_DISABLE = (byte) 19;
     public static final byte UNDERSCORE_ON = (byte) 20;
@@ -227,7 +237,6 @@ public class Terminal implements Runnable {
 
         fromKbdQ.offer(ERASE_WINDOW);
 
-//		for (c = 0; c < testlineHRule1.length; c++) {
         for (c = 0; c < visible_cols; c++) {
             fromKbdQ.offer(testlineHRule1[c]);
         }
@@ -675,6 +684,27 @@ public class Terminal implements Runnable {
                         status.dirty = true;
                         skipChar = true;
                         break;
+                    case PRINT_SCREEN:
+                        // not supported on D210
+                        if (status.emulation.getLevel() != 210) {
+                            String screenString = new String();
+                            
+                            for (int l = 0; l < visible_lines; l++) {
+                                for (int c = 0; c < visible_cols; c++)
+                                    screenString += (char) display[l][c].charValue;
+                                screenString += "\n";
+                            }
+                            Text screenText = new Text( 10,10, screenString );
+                            screenText.setFont( new Font( "Courier New", 10 ));
+                            screenText.setFill( Color.BLACK );
+                            PrinterJob job = PrinterJob.createPrinterJob();
+                            if (job != null) {
+                                boolean ok = job.printPage( screenText );
+                                if (ok) job.endJob();
+                            }
+                        }
+                        skipChar = true;
+                        break;
                     case ROLL_DISABLE:
                         roll_enabled = false;
                         skipChar = true;
@@ -772,11 +802,18 @@ public class Terminal implements Runnable {
                 fromKbdQ.offer((byte) 036);
                 fromKbdQ.offer((byte) 0157);
                 fromKbdQ.offer((byte) 043);  // model report
-                fromKbdQ.offer((byte) 050);  // D210
-                fromKbdQ.offer((byte) 'Z'); // see p.2-7 of D100/D200 User Manual
-                fromKbdQ.offer((byte) 003);  // firmware code
+                fromKbdQ.offer((byte) 050) ;  // D210/D211
+                fromKbdQ.offer((byte) 0b01010001); // see p.3-9 of D210/D211 User Manual
+                fromKbdQ.offer((byte) 0b01011010);  
                 break;
-
+             case D211:
+                fromKbdQ.offer((byte) 036);
+                fromKbdQ.offer((byte) 0157);
+                fromKbdQ.offer((byte) 043);  // model report
+                fromKbdQ.offer((byte) 050) ;  // D210/D211
+                fromKbdQ.offer((byte) 0b01011001); // see p.3-9 of D210/D211 User Manual
+                fromKbdQ.offer((byte) 0b01111010);  
+                break;
         }
     }
 

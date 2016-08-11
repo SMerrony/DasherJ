@@ -21,6 +21,7 @@ package components;
  * 
  * @author steve
  * 
+ * v.1.2  Add D211 emulation, fix D210 emulation now we have documentation.
  * v.1.1  CRT colour changes
  *        Simplify layout widgets
  *        Fix resizing/rescaling
@@ -110,7 +111,7 @@ public class DasherJ extends Application {
   // in a close approximation of a physical DASHER display ratio
   public static final double DEFAULT_VERT_ZOOM = 2.0; 
 
-  private static final double VERSION = 1.1;
+  private static final double VERSION = 1.2;
   private static final int COPYRIGHT_YEAR = 2016;
   private static final String RELEASE_STATUS = "Production";
   private static final String HELP_URL_TEXT = "http://stephenmerrony.co.uk/dg/doku.php?id=software:newsoftware:dasherj";
