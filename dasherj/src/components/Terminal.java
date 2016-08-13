@@ -35,7 +35,8 @@ import javafx.scene.text.Text;
  *
  * v.1.2 - Fix Read Model response for D210
  *         Add Read Model response for D211
- *         Add Print Screen action
+ *         Add (host-initiated) Print Screen action
+ *         Add Ctrl-B/V Reverse video commands for D210 and up
  * v.1.1 - Increase length of 2nd self-test line
  * v.0.9 - Change to JavaFX AudioClip player for beep sound Add sendModelID
  *         method, implement for D210 
@@ -58,13 +59,16 @@ public class Terminal implements Runnable {
             MAX_VISIBLE_LINES = 66,
             TOTAL_LINES = 96;
 
+    /***
+     * These constants are the single-byte DASHER control characters
+     */
     public static final byte NULL = (byte) 0;
     public static final byte PRINT_FORM = (byte) 1;
-
+    public static final byte REVERSE_VIDEO_OFF = (byte) 2; // New for D210 onwards
     public static final byte BLINK_ENABLE = (byte) 3; // for the whole screen
     public static final byte BLINK_DISABLE = (byte) 4; // for the whole screen
     public static final byte READ_WINDOW_ADDR = (byte) 5; // REQUIRES RESPONSE
-
+    public static final byte ACK = (byte) 6;    // sent to host to indicate local print has completed
     public static final byte BELL = (byte) 7;
     public static final byte HOME = (byte) 8; // window home
     public static final byte TAB = (byte) 9;
@@ -80,7 +84,7 @@ public class Terminal implements Runnable {
     public static final byte ROLL_DISABLE = (byte) 19;
     public static final byte UNDERSCORE_ON = (byte) 20;
     public static final byte UNDERSCORE_OFF = (byte) 21;
-
+    public static final byte REVERSE_VIDEO_ON = (byte) 22; // New for D210 onwards
     public static final byte CURSOR_UP = (byte) 23;
     public static final byte CURSOR_RIGHT = (byte) 24;
     public static final byte CURSOR_LEFT = (byte) 25;
@@ -89,6 +93,9 @@ public class Terminal implements Runnable {
     public static final byte DIM_ON = (byte) 28;
     public static final byte DIM_OFF = (byte) 29;
 
+    /***
+     * This is the DASHER CoMmandD escape used to prefix extended commands
+     */
     public static final byte CMD = (byte) 30;
 
     public static final byte SPACE = (byte) 32;
@@ -448,7 +455,7 @@ public class Terminal implements Runnable {
                     logQ.offer(ch);
                 }
 
-                // D200 commands
+                // D200 CMD commands
                 if (inCommand) {
                     switch (ch) {
                         case 'C':	 	// REQUIRES RESPONSE
@@ -701,9 +708,23 @@ public class Terminal implements Runnable {
                             if (job != null) {
                                 boolean ok = job.printPage( screenText );
                                 if (ok) job.endJob();
+                                // send ACK to host
+                                fromKbdQ.offer( ACK );
                             }
                         }
                         skipChar = true;
+                        break;
+                    case REVERSE_VIDEO_OFF:
+                        if (status.emulation.getLevel() > 200) {
+                            reversedVideo = false;
+                            skipChar = true;
+                        }
+                        break;
+                    case REVERSE_VIDEO_ON:
+                        if (status.emulation.getLevel() > 200) {
+                            reversedVideo = true;
+                            skipChar = true;
+                        }
                         break;
                     case ROLL_DISABLE:
                         roll_enabled = false;
