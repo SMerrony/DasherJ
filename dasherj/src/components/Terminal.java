@@ -37,6 +37,7 @@ import javafx.scene.text.Text;
  *         Add Read Model response for D211
  *         Add (host-initiated) Print Screen action
  *         Add Ctrl-B/V Reverse video commands for D210 and up
+ *         Add terminal History and fetchDisplayAsString() method
  * v.1.1 - Increase length of 2nd self-test line
  * v.0.9 - Change to JavaFX AudioClip player for beep sound Add sendModelID
  *         method, implement for D210 
@@ -109,7 +110,8 @@ public class Terminal implements Runnable {
 
     private Status status;
 
-    Cell[][] display;
+    public Cell[][] display;
+    public History history; 
 
     private BlockingQueue<Byte> fromHostQ, fromKbdQ, logQ;
 
@@ -153,6 +155,7 @@ public class Terminal implements Runnable {
                 display[y][x] = new Cell();
             }
         }
+        history = new History();
 
         display[12][39].charValue = 'O';
         display[12][40].charValue = 'K';
@@ -217,10 +220,14 @@ public class Terminal implements Runnable {
         }
     }
 
-    void scrollUp(int rows) {
-        for (int times = 0; times < rows; times++) {
+    void scrollUp(int rowsToScroll) {
+        for (int times = 0; times < rowsToScroll; times++) {
             // move each char up a row
             for (int r = 1; r < TOTAL_LINES; r++) {
+                // store top-line in history
+                if (r == 1) {
+                    history.addLine( display[0] );
+                }
                 for (int c = 0; c < visible_cols; c++) {
                     display[r - 1][c].copy(display[r][c]);
                 }
@@ -838,4 +845,16 @@ public class Terminal implements Runnable {
         }
     }
 
+    public String fetchDisplayAsString() {
+        String text;
+        StringBuilder builder = new StringBuilder( 1000 );
+        for (int r = 0; r < this.visible_lines; r++ ) {
+            for ( int c = 0; c < this.visible_cols; c++ ){
+                builder.append( (char) this.display[r][c].charValue );
+            }
+            builder.append( "\n" );
+        }
+        text = builder.toString();
+        return text;
+    }
 }

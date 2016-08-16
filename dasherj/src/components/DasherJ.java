@@ -22,6 +22,7 @@ package components;
  * @author steve
  * 
  * v.1.2  Add D211 emulation, fix D210 emulation now we have documentation.
+ *        Add terminal history functionality
  * v.1.1  CRT colour changes
  *        Simplify layout widgets
  *        Fix resizing/rescaling
@@ -101,6 +102,10 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import components.Status.ConnectionType;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.TextArea;
+import javafx.scene.text.Font;
+
 
 public class DasherJ extends Application {
 
@@ -349,10 +354,11 @@ public class DasherJ extends Application {
       updateCrtTimeline.pause();
 
       terminal.resize( newLines, newCols );
-      double newWidth =  (double) (newCols * BDFfont.CHAR_PIXEL_WIDTH );
-      double newHeight = (double) (newLines * BDFfont.CHAR_PIXEL_HEIGHT * newVzoom );
+      double newWidth =  (double) ( newCols * BDFfont.CHAR_PIXEL_WIDTH );
+      double newHeight = (double) ( newLines * BDFfont.CHAR_PIXEL_HEIGHT * newVzoom );
       crt.setWidth( newWidth );
       crt.setHeight( newHeight );
+
       scale.setX( newHzoom );
       scale.setY( newVzoom );
       // System.out.printf( "DEBUG - new CRT width: %f\n", newWidth );
@@ -360,7 +366,7 @@ public class DasherJ extends Application {
       status.dirty = true;
      
       mainStage.sizeToScene();
-      mainStage.setWidth( newWidth * newHzoom );
+      mainStage.setWidth( (newWidth * newHzoom) + 6 );
       
       updateCrtTimeline.play();
     }
@@ -462,6 +468,9 @@ public class DasherJ extends Application {
 
     final Menu editMenu = new Menu( "Edit" );
     final MenuItem pasteMenuItem = new MenuItem( "Paste" );
+    
+    final Menu viewMenu = new Menu( "View" );
+    final MenuItem viewHistoryMenuItem = new MenuItem( "View History" );
 
     final Menu emulMenu = new Menu( "Emulation" );
     final ToggleGroup emulGroup = new ToggleGroup();
@@ -582,6 +591,13 @@ public class DasherJ extends Application {
       }
     });    	
 
+    // view
+    menuBar.getMenus().add( viewMenu );
+    viewMenu.getItems().add( viewHistoryMenuItem );
+    
+    viewHistoryMenuItem.setOnAction( (ae) -> {
+        showHistoryDialog();
+    });
 
     // emulation
 
@@ -718,6 +734,20 @@ public class DasherJ extends Application {
     connectPort = Integer.parseInt( hostArg.substring( colonIx + 1 ) );
     haveConnectHost = true;   	
   }
+
+    private void showHistoryDialog() {
+        Dialog historyDialog = new Dialog();
+        historyDialog.setTitle( "DasherJ Terminal History" );
+        ButtonType closeButtonType = new ButtonType( "Close", ButtonData.CANCEL_CLOSE );
+        historyDialog.getDialogPane().getButtonTypes().add( closeButtonType );
+        TextArea historyArea = new TextArea( terminal.history.fetchAllAsString() + terminal.fetchDisplayAsString() );
+        historyArea.setPrefColumnCount( terminal.visible_cols );
+        historyArea.setPrefRowCount( terminal.visible_lines );
+        historyArea.setEditable( false );
+        historyArea.setFont( Font.font( "monospace" ) );
+        historyDialog.getDialogPane().setContent( historyArea );
+        historyDialog.showAndWait();
+    }
 
   public class LocalPrintHandler implements EventHandler<ActionEvent> {
     @Override
