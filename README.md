@@ -15,6 +15,7 @@ From v0.9 it is written using JavaFX with the [JSSC serial library](https://gith
 * Pixel-for-pixel copy of D410 character set
 * Session logging to file
 * Loadable function-key templates (BROWSE, SED and SMI provided as examples)
+* Up to 1000 lines of terminal history stored for review
 
 ## Using DasherJ
 
@@ -27,4 +28,4 @@ The "Brk" key sends a Command-Break signal to the host when connected via the se
 "Hold" and "Local Print" work as you would expect.
 
 ### Emulation Details
-[See this chart](http://www.stephenmerrony.co.uk/dg/lib/exe/fetch.php?media=software:newsoftware:dasherq:implementationchart.pdf)
+[See this chart](http://www.stephenmerrony.co.uk/dg/lib/exe/fetch.php?media=software:newsoftware:dasherj:implementationchart.pdf)
