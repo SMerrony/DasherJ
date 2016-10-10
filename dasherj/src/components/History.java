@@ -17,7 +17,6 @@
 package components;
 
 import java.util.LinkedList;
-import javafx.scene.text.Text;
 
 /**
  * This class represents the terminal history which is used for scroll-back purposes.
@@ -25,10 +24,11 @@ import javafx.scene.text.Text;
  * @author Stephen Merrony
  * 
  * v.1.2 - Class introduced
+ *       - Remove unused import, increase history to 2000 lines
  */
 public class History {
     
-    public static final int MAX_HISTORY_LINES = 1000;
+    public static final int MAX_HISTORY_LINES = 2000;
     
     /**
      * the buffer is a list of arrays of Cells...
