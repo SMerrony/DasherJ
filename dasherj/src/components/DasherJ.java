@@ -23,6 +23,7 @@ package components;
  * 
  * v.1.2  Add D211 emulation, fix D210 emulation now we have documentation.
  *        Add terminal history functionality
+ *        Update status when logging is stopped by user
  * v.1.1  CRT colour changes
  *        Simplify layout widgets
  *        Fix resizing/rescaling
@@ -556,6 +557,7 @@ public class DasherJ extends Application {
       loggingThread.interrupt();
       startLoggingMenuItem.setDisable( false );
       stopLoggingMenuItem.setDisable( true );
+      status.logging = false;
     });
 
     fileMenu.getItems().add( startLoggingMenuItem );
