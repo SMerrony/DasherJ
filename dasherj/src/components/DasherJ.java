@@ -742,6 +742,7 @@ public class DasherJ extends Application {
         historyDialog.setTitle( "DasherJ Terminal History" );
         ButtonType closeButtonType = new ButtonType( "Close", ButtonData.CANCEL_CLOSE );
         historyDialog.getDialogPane().getButtonTypes().add( closeButtonType );
+        historyDialog.setResizable( true );
         TextArea historyArea = new TextArea( terminal.history.fetchAllAsString() + terminal.fetchDisplayAsString() );
         historyArea.setPrefColumnCount( terminal.visible_cols );
         historyArea.setPrefRowCount( terminal.visible_lines );
